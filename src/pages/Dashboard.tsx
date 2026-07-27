@@ -302,19 +302,19 @@ export default function Dashboard() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[70vh]">
-              <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 text-sm">
+            <div className="p-6 overflow-y-auto max-h-[70vh] overflow-x-hidden">
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 text-sm break-words">
                 <div className="sm:col-span-1">
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Antar Berkas</dt>
                   <dd className="mt-1 font-semibold text-gray-900">{detailData.tglAntarBerkas || '-'}</dd>
                 </div>
                 <div className="sm:col-span-1">
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">No SPM</dt>
-                  <dd className="mt-1 font-semibold text-gray-900">{detailData.noSpm || '-'}</dd>
+                  <dd className="mt-1 font-semibold text-gray-900 break-all">{detailData.noSpm || '-'}</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Rekanan</dt>
-                  <dd className="mt-1 font-semibold text-gray-900">{detailData.namaRekanan || '-'}</dd>
+                  <dd className="mt-1 font-semibold text-gray-900 break-words">{detailData.namaRekanan || '-'}</dd>
                 </div>
                 <div className="sm:col-span-1">
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai Kwitansi</dt>
@@ -326,19 +326,19 @@ export default function Dashboard() {
                 </div>
                 <div className="sm:col-span-1">
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Sub Kegiatan</dt>
-                  <dd className="mt-1 font-semibold text-gray-900">{detailData.kodeSubKegiatan || '-'}</dd>
-                </div>
-                <div className="sm:col-span-1">
-                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">No SP2D</dt>
-                  <dd className="mt-1 font-semibold text-green-600">{detailData.noSp2d || '-'}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pekerjaan / Keterangan</dt>
-                  <dd className="mt-1 font-semibold text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-100">{detailData.pekerjaan || '-'}</dd>
+                  <dd className="mt-1 font-semibold text-gray-900 break-all">{detailData.kodeSubKegiatan || '-'}</dd>
                 </div>
                 <div className="sm:col-span-1">
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Cair SP2D</dt>
                   <dd className="mt-1 font-semibold text-gray-900">{detailData.tglCairSp2d || '-'}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">No SP2D</dt>
+                  <dd className="mt-1 font-semibold text-green-600 break-all bg-green-50/50 p-2.5 rounded-lg border border-green-100">{detailData.noSp2d || '-'}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pekerjaan / Keterangan</dt>
+                  <dd className="mt-1 font-semibold text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-100 break-words">{detailData.pekerjaan || '-'}</dd>
                 </div>
               </dl>
             </div>
