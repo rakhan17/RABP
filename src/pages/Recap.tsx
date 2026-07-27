@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getRegistrations } from '../lib/db';
-import { Sp2dRegistration } from '../types';
+import type { Sp2dRegistration } from '../types';
 import { USERS } from '../lib/users';
 import { FileDown, Filter } from 'lucide-react';
 import * as XLSX from 'xlsx';

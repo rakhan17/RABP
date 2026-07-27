@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Sp2dRegistration } from '../types';
+import type { Sp2dRegistration } from '../types';
 
 const COLLECTION_NAME = 'registrations';
 

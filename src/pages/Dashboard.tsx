@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Sp2dRegistration } from '../types';
+import type { Sp2dRegistration } from '../types';
 import { getRegistrations, addRegistration, updateRegistration, deleteRegistration } from '../lib/db';
 import { USERS } from '../lib/users';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';

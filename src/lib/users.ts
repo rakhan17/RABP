@@ -1,10 +1,11 @@
 export interface User {
   username: string;
+  password?: string;
   role: 'admin' | 'viewer';
   bidang: string;
 }
 
-export const USERS = [
+export const USERS: User[] = [
   { username: 'Keuangan', password: 'DPU01', role: 'admin', bidang: 'Keuangan' },
   { username: 'Sekretariat', password: 'DPU02', role: 'viewer', bidang: 'Sekretariat' },
   { username: 'Bidang JJ', password: 'DPU03', role: 'viewer', bidang: 'Bidang JJ' },
