@@ -10,5 +10,4 @@ export interface Sp2dRegistration {
   pekerjaan: string;
   noSp2d: string;
   tglCairSp2d: string; // ISO String or YYYY-MM-DD
-  createdAt: number;
 }

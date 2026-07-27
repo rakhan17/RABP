@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getRegistrations } from '../lib/db';
+import { getRegistrations } from '../lib/sheets';
 import type { Sp2dRegistration } from '../types';
 import { Search } from 'lucide-react';
 
@@ -36,7 +36,14 @@ export default function SearchSp2d() {
     const results = data.filter((item) => {
       return (
         (item.noSp2d && item.noSp2d.toLowerCase().includes(query)) ||
-        (item.noSpm && item.noSpm.toLowerCase().includes(query))
+        (item.noSpm && item.noSpm.toLowerCase().includes(query)) ||
+        (item.namaRekanan && item.namaRekanan.toLowerCase().includes(query)) ||
+        (item.bidang && item.bidang.toLowerCase().includes(query)) ||
+        (item.kodeSubKegiatan && item.kodeSubKegiatan.toLowerCase().includes(query)) ||
+        (item.pekerjaan && item.pekerjaan.toLowerCase().includes(query)) ||
+        (item.tglAntarBerkas && item.tglAntarBerkas.toLowerCase().includes(query)) ||
+        (item.tglCairSp2d && item.tglCairSp2d.toLowerCase().includes(query)) ||
+        (item.nilaiKwitansi && item.nilaiKwitansi.toString().includes(query))
       );
     });
 
@@ -66,7 +73,7 @@ export default function SearchSp2d() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-              placeholder="Masukkan No SP2D / No SPM..."
+              placeholder="Cari berdasarkan No SP2D, SPM, Rekanan, Bulan, dll..."
             />
           </div>
           <button

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getRegistrations } from '../lib/db';
+import { getRegistrations } from '../lib/sheets';
 import type { Sp2dRegistration } from '../types';
-import { USERS } from '../lib/users';
+import { BINDANG_LIST } from '../lib/users';
 import { FileDown, Filter } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -118,8 +118,8 @@ export default function Recap() {
               className="block w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 p-2.5 sm:text-sm"
             >
               <option value="">Semua Bidang</option>
-              {USERS.filter(u => u.bidang !== 'Keuangan').map(u => (
-                <option key={u.bidang} value={u.bidang}>{u.bidang}</option>
+              {BINDANG_LIST.filter(b => b !== 'Keuangan').map(b => (
+                <option key={b} value={b}>{b}</option>
               ))}
             </select>
           </div>

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { Sp2dRegistration } from '../types';
-import { getRegistrations, addRegistration, updateRegistration, deleteRegistration } from '../lib/db';
-import { USERS } from '../lib/users';
+import { getRegistrations, addRegistration, updateRegistration, deleteRegistration } from '../lib/sheets';
+import { BINDANG_LIST } from '../lib/users';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState<Sp2dRegistration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string>('');
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,15 +29,19 @@ export default function Dashboard() {
   });
 
   const isAdmin = user?.role === 'admin';
-  // Admin is Keuangan, others are viewers. Viewers only see fields related to their Bidang if we want, but instruction says "mencari data dan mengecek data saja". Meaning they can see all.
 
   const fetchData = async () => {
     setLoading(true);
+    setErrorMsg('');
     try {
       const result = await getRegistrations();
       setData(result);
-    } catch (error) {
+      if (result.length === 0) {
+        setErrorMsg('Data kosong (0 rows). Periksa file sheets.ts atau Console Browser.');
+      }
+    } catch (error: any) {
       console.error("Error fetching data:", error);
+      setErrorMsg(error?.message || String(error));
     }
     setLoading(false);
   };
@@ -150,7 +155,20 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <div className="text-center py-10">Memuat data...</div>
+        <div className="py-20 flex flex-col items-center justify-center space-y-4">
+          <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full animate-[loading_1.5s_ease-in-out_infinite] origin-left" 
+                 style={{ width: '100%', animationName: 'progress-bar' }}></div>
+          </div>
+          <p className="text-sm font-medium text-gray-500 animate-pulse">Memuat data dari Spreadsheet...</p>
+          <style>{`
+            @keyframes progress-bar {
+              0% { transform: translateX(-100%); }
+              50% { transform: translateX(0); }
+              100% { transform: translateX(100%); }
+            }
+          `}</style>
+        </div>
       ) : (
         <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
@@ -172,6 +190,13 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
+                {errorMsg && (
+                  <tr>
+                    <td colSpan={12} className="px-4 py-4 text-center text-red-500 bg-red-50 font-medium">
+                      Pesan Sistem: {errorMsg}
+                    </td>
+                  </tr>
+                )}
                 {data.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
@@ -224,95 +249,97 @@ export default function Dashboard() {
 
       {/* Modal Input/Edit */}
       {isModalOpen && isAdmin && (
-        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Background overlay */}
+          <div 
+            className="absolute inset-0 bg-gray-800/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsModalOpen(false)}
+          ></div>
+          
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+              <h3 className="text-xl font-bold text-gray-900">
+                {editingId ? 'Edit Data SP2D' : 'Tambah Data SP2D'}
+              </h3>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             
-            {/* Background overlay */}
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setIsModalOpen(false)}></div>
-            
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
-            <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="flex justify-between items-center mb-5">
-                  <h3 className="text-xl leading-6 font-bold text-gray-900" id="modal-title">
-                    {editingId ? 'Edit Data SP2D' : 'Tambah Data SP2D'}
-                  </h3>
-                  <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-500">
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                <form id="sp2d-form" onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Tanggal Antar Berkas</label>
-                      <input type="date" required value={formData.tglAntarBerkas} onChange={(e) => setFormData({...formData, tglAntarBerkas: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">No SPM</label>
-                      <input type="text" required value={formData.noSpm} onChange={(e) => setFormData({...formData, noSpm: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
+            <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
+              <form id="sp2d-form" onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tanggal Antar Berkas</label>
+                    <input type="date" required value={formData.tglAntarBerkas} onChange={(e) => setFormData({...formData, tglAntarBerkas: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">No SPM</label>
+                    <input type="text" required value={formData.noSpm} onChange={(e) => setFormData({...formData, noSpm: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" placeholder="Masukkan No SPM" />
+                  </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">Nama Rekanan</label>
-                      <input type="text" required value={formData.namaRekanan} onChange={(e) => setFormData({...formData, namaRekanan: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Rekanan</label>
+                    <input type="text" required value={formData.namaRekanan} onChange={(e) => setFormData({...formData, namaRekanan: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" placeholder="Masukkan Nama Rekanan" />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Nilai Kwitansi (Rp)</label>
-                      <input type="number" required min="0" value={formData.nilaiKwitansi} onChange={(e) => setFormData({...formData, nilaiKwitansi: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nilai Kwitansi (Rp)</label>
+                    <input type="number" required min="0" value={formData.nilaiKwitansi} onChange={(e) => setFormData({...formData, nilaiKwitansi: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" placeholder="0" />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Nama Bidang</label>
-                      <select required value={formData.bidang} onChange={(e) => setFormData({...formData, bidang: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Bidang</label>
+                      <select required value={formData.bidang} onChange={(e) => setFormData({...formData, bidang: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white">
                         <option value="">-- Pilih Bidang --</option>
-                        {USERS.filter(u => u.bidang !== 'Keuangan').map(u => (
-                          <option key={u.bidang} value={u.bidang}>{u.bidang}</option>
+                        {BINDANG_LIST.filter(b => b !== 'Keuangan').map(b => (
+                          <option key={b} value={b}>{b}</option>
                         ))}
                       </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Kode Sub Kegiatan</label>
-                      <input type="text" required value={formData.kodeSubKegiatan} onChange={(e) => setFormData({...formData, kodeSubKegiatan: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">No SP2D</label>
-                      <input type="text" value={formData.noSp2d} onChange={(e) => setFormData({...formData, noSp2d: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">Pekerjaan / Keterangan</label>
-                      <textarea required rows={2} value={formData.pekerjaan} onChange={(e) => setFormData({...formData, pekerjaan: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"></textarea>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Tanggal Cair SP2D</label>
-                      <input type="date" value={formData.tglCairSp2d} onChange={(e) => setFormData({...formData, tglCairSp2d: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-                    </div>
                   </div>
-                </form>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="submit"
-                  form="sp2d-form"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
-                >
-                  Simpan
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
-                >
-                  Batal
-                </button>
-              </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Kode Sub Kegiatan</label>
+                    <input type="text" required value={formData.kodeSubKegiatan} onChange={(e) => setFormData({...formData, kodeSubKegiatan: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" placeholder="Contoh: 1.03.01..." />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">No SP2D</label>
+                    <input type="text" value={formData.noSp2d} onChange={(e) => setFormData({...formData, noSp2d: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" placeholder="Boleh dikosongkan sementara" />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Pekerjaan / Keterangan</label>
+                    <textarea required rows={3} value={formData.pekerjaan} onChange={(e) => setFormData({...formData, pekerjaan: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" placeholder="Deskripsi pekerjaan..."></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tanggal Cair SP2D</label>
+                    <input type="date" value={formData.tglCairSp2d} onChange={(e) => setFormData({...formData, tglCairSp2d: e.target.value})} className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white" />
+                  </div>
+                </div>
+              </form>
+            </div>
+            
+            <div className="bg-white px-6 py-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-3 sm:gap-0">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-full sm:w-auto inline-flex justify-center rounded-lg border border-gray-300 px-5 py-2.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form="sp2d-form"
+                className="w-full sm:w-auto inline-flex justify-center rounded-lg border border-transparent px-5 py-2.5 bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-colors"
+              >
+                Simpan Data
+              </button>
             </div>
           </div>
         </div>

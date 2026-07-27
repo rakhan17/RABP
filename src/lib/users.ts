@@ -1,3 +1,6 @@
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+
 export interface User {
   username: string;
   password?: string;
@@ -5,13 +8,26 @@ export interface User {
   bidang: string;
 }
 
-export const USERS: User[] = [
-  { username: 'Keuangan', password: 'DPU01', role: 'admin', bidang: 'Keuangan' },
-  { username: 'Sekretariat', password: 'DPU02', role: 'viewer', bidang: 'Sekretariat' },
-  { username: 'Bidang JJ', password: 'DPU03', role: 'viewer', bidang: 'Bidang JJ' },
-  { username: 'Bidang SDA', password: 'DPU04', role: 'viewer', bidang: 'Bidang SDA' },
-  { username: 'Bidang PLP', password: 'DPU05', role: 'viewer', bidang: 'Bidang PLP' },
-  { username: 'Bidang GP', password: 'DPU06', role: 'viewer', bidang: 'Bidang GP' },
-  { username: 'UPTD Drainase', password: 'DPU07', role: 'viewer', bidang: 'UPTD Drainase' },
-  { username: 'UPTD JJ', password: 'DPU08', role: 'viewer', bidang: 'UPTD JJ' },
+// Temporary for dropdowns until we fetch from DB
+export const BINDANG_LIST = [
+  'Keuangan', 'Sekretariat', 'Bidang JJ', 'Bidang SDA', 
+  'Bidang PLP', 'Bidang GP', 'UPTD Drainase', 'UPTD JJ'
 ];
+
+export async function getUserByUsername(username: string): Promise<User | null> {
+  const usersRef = collection(db, 'users');
+  // We query case-insensitive using a specific field if it exists, but since we are doing simple equality, we can fetch all and find, 
+  // or store doc ID as lowercase. The easiest is to store doc ID as lowercase and fetch by doc ID.
+  try {
+    const allUsersSnapshot = await getDocs(usersRef);
+    const users: User[] = [];
+    allUsersSnapshot.forEach((doc) => {
+      users.push(doc.data() as User);
+    });
+    
+    return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+}

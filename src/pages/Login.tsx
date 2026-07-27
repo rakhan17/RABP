@@ -1,27 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { USERS } from '../lib/users';
+import { getUserByUsername } from '../lib/users';
 import { Lock, User as UserIcon } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    const user = USERS.find(u => u.username === username && u.password === password);
-    if (user) {
+    const user = await getUserByUsername(username);
+    if (user && user.password === password) {
       login(user);
       navigate('/');
     } else {
       setError('Username atau Password salah!');
     }
+    setIsLoading(false);
   };
 
   return (
@@ -75,9 +78,10 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:bg-blue-400"
           >
-            Masuk
+            {isLoading ? 'Memuat...' : 'Masuk'}
           </button>
         </form>
       </div>
