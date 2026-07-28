@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { addRegistration, updateRegistration } from '../lib/sheets';
+import { addRegistrationToFirestore, updateRegistrationInFirestore } from '../lib/firestoreService';
 import { BINDANG_LIST } from '../lib/users';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 
@@ -10,10 +10,10 @@ export default function FormSp2d() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data, refreshData } = useData();
+  const { data, isKeuangan, userBidang } = useData();
 
   const isEditing = Boolean(id);
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || isKeuangan;
 
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,7 +21,7 @@ export default function FormSp2d() {
     noSpm: '',
     namaRekanan: '',
     nilaiKwitansi: '',
-    bidang: '',
+    bidang: userBidang || '',
     kodeSubKegiatan: '',
     pekerjaan: '',
     noSp2d: '',
@@ -67,15 +67,19 @@ export default function FormSp2d() {
           noSpm: existing.noSpm || '',
           namaRekanan: existing.namaRekanan || '',
           nilaiKwitansi: existing.nilaiKwitansi ? existing.nilaiKwitansi.toString() : '',
-          bidang: existing.bidang || '',
+          bidang: existing.bidang || userBidang || '',
           kodeSubKegiatan: existing.kodeSubKegiatan || '',
           pekerjaan: existing.pekerjaan || '',
           noSp2d: existing.noSp2d || '',
           tglCairSp2d: parseToInputDate(existing.tglCairSp2d),
         });
       }
+    } else {
+      if (!isKeuangan && userBidang) {
+        setFormData((prev) => ({ ...prev, bidang: userBidang }));
+      }
     }
-  }, [isEditing, id, data]);
+  }, [isEditing, id, data, userBidang, isKeuangan]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +95,7 @@ export default function FormSp2d() {
         noSpm: formData.noSpm,
         namaRekanan: formData.namaRekanan,
         nilaiKwitansi: formData.nilaiKwitansi ? Number(formData.nilaiKwitansi) : 0,
-        bidang: formData.bidang,
+        bidang: isKeuangan ? formData.bidang : (userBidang || formData.bidang),
         kodeSubKegiatan: formData.kodeSubKegiatan,
         pekerjaan: formData.pekerjaan,
         noSp2d: formData.noSp2d,
@@ -99,15 +103,14 @@ export default function FormSp2d() {
       };
 
       if (isEditing && id) {
-        await updateRegistration(id, payload);
+        await updateRegistrationInFirestore(id, payload);
       } else {
-        await addRegistration(payload);
+        await addRegistrationToFirestore(payload);
       }
-      await refreshData();
       navigate('/');
-    } catch (error) {
-      console.error("Error saving data:", error);
-      alert("Terjadi kesalahan saat menyimpan data ke Google Sheets. Silakan coba lagi.");
+    } catch (error: any) {
+      console.error("Error saving data to Firestore:", error);
+      alert(error?.message || "Terjadi kesalahan saat menyimpan data ke Firebase.");
     } finally {
       setSaving(false);
     }
@@ -132,7 +135,7 @@ export default function FormSp2d() {
             {isEditing ? 'Edit Data SP2D' : 'Tambah Data SP2D Baru'}
           </h2>
           <p className="text-xs text-gray-500 mt-1">
-            Semua bidang isian bersifat opsional. Isilah bagian yang diperlukan.
+            Tersimpan langsung ke Firebase Firestore. Semua bidang isian bersifat opsional.
           </p>
         </div>
 
@@ -197,7 +200,8 @@ export default function FormSp2d() {
               <select
                 value={formData.bidang}
                 onChange={(e) => setFormData({ ...formData, bidang: e.target.value })}
-                className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white"
+                disabled={!isKeuangan}
+                className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white disabled:bg-gray-100 disabled:text-gray-600"
               >
                 <option value="">-- Pilih Bidang --</option>
                 {BINDANG_LIST.map((b) => (
@@ -277,7 +281,7 @@ export default function FormSp2d() {
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Menyimpan...</span>
+                  <span>Menyimpan ke Firebase...</span>
                 </>
               ) : (
                 <>

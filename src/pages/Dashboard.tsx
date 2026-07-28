@@ -3,16 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import type { Sp2dRegistration } from '../types';
-import { deleteRegistration } from '../lib/sheets';
-import { Plus, Edit2, Trash2, X, RefreshCw, Eye } from 'lucide-react';
+import { deleteRegistrationFromFirestore } from '../lib/firestoreService';
+import SpreadsheetGrid from '../components/SpreadsheetGrid';
+import { Plus, Edit2, Trash2, X, RefreshCw, Eye, Grid, Table as TableIcon, Database } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data, loading, errorMsg, refreshData } = useData();
+  const { data, loading, errorMsg, refreshData, seedInitialData, isKeuangan, userBidang } = useData();
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const selectedRowRef = useRef<HTMLTableRowElement>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Custom right-click Context Menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -23,7 +26,7 @@ export default function Dashboard() {
 
   const isAdmin = user?.role === 'admin';
 
-  // Close context menu on global click (outside) or Escape
+  // Close context menu on global click (outside)
   useEffect(() => {
     const handleCloseMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -76,7 +79,6 @@ export default function Dashboard() {
     let x = e.clientX;
     let y = e.clientY;
 
-    // Flip menu upwards if near bottom of screen
     if (x + 180 > window.innerWidth) x = window.innerWidth - 180;
     if (y + 150 > window.innerHeight) y = Math.max(10, e.clientY - 140);
 
@@ -86,20 +88,32 @@ export default function Dashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (id: string) => {
-    if (!isAdmin) return;
-    if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+    if (!isAdmin && !isKeuangan) return;
+    if (window.confirm('Apakah Anda yakin ingin menghapus data ini dari Firebase?')) {
       setIsDeleting(true);
       try {
-        await deleteRegistration(id);
+        await deleteRegistrationFromFirestore(id);
         if (selectedRowId === id) setSelectedRowId(null);
         setContextMenu(null);
-        await refreshData();
       } catch (error: any) {
-        console.error('Error deleting data', error);
-        alert(error?.message || 'Terjadi kesalahan saat menghapus data');
+        console.error('Error deleting data from Firebase', error);
+        alert(error?.message || 'Terjadi kesalahan saat menghapus data dari Firebase');
       } finally {
         setIsDeleting(false);
       }
+    }
+  };
+
+  const handleManualSeed = async () => {
+    if (!window.confirm("Impordata dari Google Sheets ke Firebase Firestore?")) return;
+    setIsSeeding(true);
+    try {
+      const count = await seedInitialData();
+      alert(`Berhasil mengimpor ${count} data ke Firebase Firestore!`);
+    } catch (err: any) {
+      alert(`Gagal impor data: ${err?.message || err}`);
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -131,34 +145,71 @@ export default function Dashboard() {
             <RefreshCw className="h-6 w-6 text-red-600 animate-spin" />
             <div>
               <h4 className="font-bold text-gray-800">Menghapus Data...</h4>
-              <p className="text-xs text-gray-500">Mohon tunggu sebentar, sedang memperbarui Google Sheets.</p>
+              <p className="text-xs text-gray-500">Mohon tunggu sebentar, sedang memperbarui Firebase Firestore.</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-shrink-0 no-print">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-shrink-0 no-print gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Register Antar Berkas dan Pencairan</h2>
-          <p className="text-gray-500 mt-1">
-            Daftar seluruh data SP2D <span className="text-xs text-gray-400 font-normal">(Klik kanan pada baris untuk opsi aksi)</span>
+          <p className="text-gray-500 mt-1 flex items-center space-x-2">
+            <span>Daftar data SP2D</span>
+            <span className="bg-blue-100 text-blue-800 font-semibold px-2.5 py-0.5 rounded-full text-xs">
+              {isKeuangan ? 'Akses Keuangan (Semua Bidang)' : `Bidang: ${userBidang}`}
+            </span>
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-0">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Mode Switcher */}
+          <div className="bg-gray-200 p-1 rounded-lg flex items-center space-x-1">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewMode === 'table' ? 'bg-white text-blue-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <TableIcon className="h-3.5 w-3.5" />
+              <span>Tabel</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewMode === 'grid' ? 'bg-white text-blue-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Grid className="h-3.5 w-3.5" />
+              <span>Spreadsheet</span>
+            </button>
+          </div>
+
           <button
             onClick={() => refreshData()}
             disabled={loading}
-            className="flex w-full sm:w-auto items-center justify-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+            className="flex items-center justify-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3.5 py-2 rounded-lg shadow-sm transition-colors text-xs font-medium disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
 
+          {isKeuangan && (
+            <button
+              onClick={handleManualSeed}
+              disabled={isSeeding}
+              className="flex items-center justify-center space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+              title="Import data dari Google Sheets ke Firebase Firestore"
+            >
+              <Database className="h-4 w-4" />
+              <span>{isSeeding ? 'Mengimpor...' : 'Sync Firestore'}</span>
+            </button>
+          )}
+
           {isAdmin && (
             <button
               onClick={() => navigate('/add')}
-              className="flex w-full sm:w-auto items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+              className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors text-xs font-semibold"
             >
               <Plus className="h-4 w-4" />
               <span>Tambah Data</span>
@@ -175,7 +226,7 @@ export default function Dashboard() {
               style={{ width: '100%', animationName: 'progress-bar' }}
             ></div>
           </div>
-          <p className="text-sm font-medium text-gray-500 animate-pulse">Memuat data...</p>
+          <p className="text-sm font-medium text-gray-500 animate-pulse">Memuat data dari Firebase Firestore...</p>
           <style>{`
             @keyframes progress-bar {
               0% { transform: translateX(-100%); }
@@ -184,7 +235,16 @@ export default function Dashboard() {
             }
           `}</style>
         </div>
+      ) : viewMode === 'grid' ? (
+        /* Built-in Interactive Spreadsheet Data Grid */
+        <SpreadsheetGrid
+          data={data}
+          isAdmin={isAdmin}
+          userBidang={userBidang}
+          isKeuangan={isKeuangan}
+        />
       ) : (
+        /* Standard Table View */
         <div className="bg-white shadow-sm border border-gray-300 overflow-hidden flex-1 flex flex-col relative print-fullscreen">
           <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
             <table className="min-w-full divide-y divide-gray-300 text-xs border-collapse">
@@ -213,8 +273,8 @@ export default function Dashboard() {
                 )}
                 {data.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-4 py-8 text-center text-gray-500 border border-gray-300">
-                      Belum ada data.
+                    <td colSpan={11} className="px-4 py-12 text-center text-gray-500 border border-gray-300">
+                      Belum ada data untuk {isKeuangan ? 'semua bidang' : `bidang ${userBidang}`}.
                     </td>
                   </tr>
                 ) : (
@@ -251,7 +311,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Custom OS Native-Style Right-Click Context Menu */}
+      {/* Custom Right-Click Context Menu */}
       {contextMenu && (
         <div
           className="context-menu fixed z-[999] bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-gray-200/80 py-1 min-w-[170px] text-xs font-medium text-gray-700 select-none animate-in fade-in zoom-in-95 duration-100"
@@ -266,7 +326,7 @@ export default function Dashboard() {
             <span>Lihat Detail</span>
           </button>
 
-          {isAdmin && (
+          {(isAdmin || isKeuangan) && (
             <>
               <button
                 onClick={() => {
@@ -343,7 +403,7 @@ export default function Dashboard() {
               </dl>
             </div>
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end space-x-3">
-              {isAdmin && (
+              {(isAdmin || isKeuangan) && (
                 <button
                   onClick={() => {
                     setIsDetailOpen(false);
