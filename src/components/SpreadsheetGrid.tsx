@@ -315,12 +315,42 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
     saveData: syncToFirestore,
   }));
 
+  const isAutoFixingRef = useRef(false);
+
   // Handle cell edit change (Fallback)
   const onChange = useCallback(
     (workbookData: any[]) => {
       const sheet = workbookData?.[0];
       if (!sheet || !sheet.data) return;
       currentSheetDataRef.current = sheet.data;
+
+      // INSTANT VISUAL FIX HACK FOR EXCEL PASTE
+      // If we are not already auto-fixing, scan the No SPM column for stripped zeros
+      if (!isAutoFixingRef.current && workbookRef.current) {
+        isAutoFixingRef.current = true;
+        
+        sheet.data.forEach((rowCells: any, r: number) => {
+          if (!rowCells || r === 0) return; // Skip header
+          const cell = rowCells[2]; // No SPM is column index 2
+          if (cell) {
+            const rawVal = cell.v !== undefined && cell.v !== null ? String(cell.v).trim() : '';
+            if (/^\d+$/.test(rawVal) && rawVal.length > 0 && rawVal.length < 4) {
+              const padded = rawVal.padStart(4, '0');
+              try {
+                // Instantly overwrite the stripped number with the padded text version
+                workbookRef.current?.setCellValue?.(r, 2, padded);
+              } catch (e) {
+                // Ignore errors
+              }
+            }
+          }
+        });
+
+        // Release the lock after a tiny delay to prevent infinite onChange loops
+        setTimeout(() => {
+          isAutoFixingRef.current = false;
+        }, 150);
+      }
     },
     []
   );
