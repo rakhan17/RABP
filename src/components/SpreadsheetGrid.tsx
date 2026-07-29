@@ -160,6 +160,26 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
       });
     });
 
+    // 3. PRE-FILL EMPTY ROWS WITH TEXT FORMAT TO PREVENT LEADING ZERO STRIPPING
+    // FortuneSheet strips leading zeros on paste if the destination cell doesn't have an explicit text format.
+    const maxEmptyRows = Math.max(100, data.length + 30);
+    for (let r = data.length + 1; r < maxEmptyRows; r++) {
+      for (let c = 0; c < 10; c++) {
+        const isKwitan = c === 4;
+        cells.push({
+          r,
+          c,
+          v: {
+            v: '',
+            m: '',
+            vt: 1,
+            ht: isKwitan ? 2 : 1, // Right-align nominal, center others
+            ct: isKwitan ? undefined : { fa: '@', t: 's' },
+          },
+        });
+      }
+    }
+
     return { celldata: cells, rowHeights: heights };
   }, [data]);
 
@@ -215,7 +235,20 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         };
 
         const tglAntarBerkas = getCellStringVal(0);
-        const noSpm = getCellStringVal(2);
+        let noSpm = getCellStringVal(2);
+        
+        // AUTO-PAD PURELY NUMERIC NO SPM TO 4 DIGITS
+        // This handles cases where pasting from Excel strips leading zeros (e.g. 0001 becomes 1).
+        if (/^\d+$/.test(noSpm) && noSpm.length < 4) {
+          noSpm = noSpm.padStart(4, '0');
+          // VISUALLY FIX IT ON THE SCREEN IMMEDIATELY so the user knows it worked!
+          try {
+            workbookRef.current?.setCellValue?.(r, 2, noSpm);
+          } catch (e) {
+            console.error("Failed to visually update padded SPM cell", e);
+          }
+        }
+
         const namaRekanan = getCellStringVal(3);
         
         const rawNilaiCell = rowCells[4];
