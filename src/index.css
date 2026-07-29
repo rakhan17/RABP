@@ -49,28 +49,26 @@ body {
   .print-container {
     padding: 0 !important;
     margin: 0 !important;
-    height: auto !important;
-    display: block !important;
-    overflow: visible !important;
-  }
-
-  .print-fullscreen, .print-table-wrapper {
-    overflow: visible !important;
-    max-height: none !important;
-    height: auto !important;
     border: none !important;
     box-shadow: none !important;
+    width: 100% !important;
   }
 
   table {
     width: 100% !important;
     border-collapse: collapse !important;
-    page-break-after: auto;
+    page-break-inside: auto !important;
   }
 
   tr {
     page-break-inside: avoid !important;
-    page-break-after: auto;
+    break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  
+  td, th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   thead {
@@ -85,7 +83,9 @@ body {
     border: 1px solid #666666 !important;
     padding: 4px 6px !important;
     color: #000000 !important;
-    font-size: 10px !important;
+    font-size: 8px !important; /* Smaller font for better fit */
+    word-wrap: break-word !important;
+    white-space: normal !important;
   }
 
   .print-header {

@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
@@ -6,14 +7,13 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SearchSp2d from './pages/SearchSp2d';
 import Recap from './pages/Recap';
-
 import FormSp2d from './pages/FormSp2d';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return null; // Or a loading spinner if preferred, but null prevents flash of content
+    return null;
   }
   
   return user ? <>{children}</> : <Navigate to="/login" />;
