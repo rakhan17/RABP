@@ -95,34 +95,43 @@ export default function SearchSp2d() {
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="min-w-full divide-y divide-gray-200 text-xs border-collapse">
-              <thead className="bg-gray-50 font-semibold text-gray-600 uppercase tracking-wider text-[10px]">
-                <tr className="divide-x divide-gray-200">
-                  <th className="px-3 py-2 text-center w-10">No</th>
-                  <th className="px-3 py-2 text-left">No SPM</th>
-                  <th className="px-3 py-2 text-left">Nama Rekanan</th>
-                  <th className="px-3 py-2 text-right">Nilai Kwitansi</th>
-                  <th className="px-3 py-2 text-left">Bidang</th>
-                  <th className="px-3 py-2 text-left">No SP2D</th>
-                  <th className="px-3 py-2 text-left">Pekerjaan</th>
+            <table className="min-w-full divide-y divide-gray-200 text-xs text-left">
+              <thead className="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 py-3">Tgl Antar</th>
+                  <th className="px-4 py-3">Bulan</th>
+                  <th className="px-4 py-3">No SPM</th>
+                  <th className="px-4 py-3">Nama Rekanan</th>
+                  <th className="px-4 py-3 text-right">Nilai Kwitansi</th>
+                  <th className="px-4 py-3">Bidang</th>
+                  <th className="px-4 py-3">Sub Kegiatan</th>
+                  <th className="px-4 py-3">Keterangan</th>
+                  <th className="px-4 py-3">No SP2D</th>
+                  <th className="px-4 py-3">Tgl Cair SP2D</th>
+                  <th className="px-4 py-3 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
-                {filteredData.map((row, idx) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => setSelectedItem(row)}
-                    className="hover:bg-emerald-50/60 transition-colors cursor-pointer divide-x divide-gray-100"
-                  >
-                    <td className="px-3 py-2.5 text-center text-gray-400 font-mono text-[11px] bg-gray-50/50">{idx + 1}</td>
-                    <td className="px-3 py-2.5 font-mono font-medium text-gray-800">{row.noSpm || '-'}</td>
-                    <td className="px-3 py-2.5 font-semibold text-gray-900 truncate max-w-[180px]">{row.namaRekanan || '-'}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-emerald-700 whitespace-nowrap">{formatCurrency(row.nilaiKwitansi)}</td>
-                    <td className="px-3 py-2.5 text-gray-600 truncate max-w-[140px]">{row.bidang || '-'}</td>
-                    <td className="px-3 py-2.5 font-mono font-bold text-emerald-600 whitespace-nowrap">{row.noSp2d || '-'}</td>
-                    <td className="px-3 py-2.5 text-gray-600 truncate max-w-[220px]">{row.pekerjaan || '-'}</td>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {filteredData.map((item) => {
+                  const bulanCalc = item.tglAntarBerkas ? new Date(item.tglAntarBerkas).toLocaleDateString('id-ID', { month: 'long' }) : '-';
+                  return (
+                  <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{item.tglAntarBerkas || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{bulanCalc}</td>
+                    <td className="px-4 py-3 font-mono font-medium text-blue-700">{item.noSpm || '-'}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 max-w-[200px] truncate">{item.namaRekanan || '-'}</td>
+                    <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.nilaiKwitansi)}</td>
+                    <td className="px-4 py-3 text-gray-500">{item.bidang || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{item.kodeSubKegiatan || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500 max-w-[250px] truncate">{item.pekerjaan || '-'}</td>
+                    <td className="px-4 py-3 font-mono font-medium text-gray-900">{item.noSp2d || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.tglCairSp2d || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => setSelectedItem(item)} className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Detail</button>
+                    </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

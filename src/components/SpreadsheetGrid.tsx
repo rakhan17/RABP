@@ -40,7 +40,7 @@ const COLUMN_WIDTHS: Record<number, number> = {
   4: 170, // Nilai Kwitansi
   5: 170, // Nama Bidang
   6: 150, // Kode Sub Kegiatan
-  7: 340, // Keterangan (Pekerjaan)
+  7: 340, // Keterangan
   8: 200, // No SP2D
   9: 160, // Tanggal Cair SP2D
 };
@@ -235,6 +235,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         };
 
         const tglAntarBerkas = getCellStringVal(0);
+        // Col 1 is 'Bulan' (Auto-calculated, no need to save)
         let noSpm = getCellStringVal(2);
         
         // AUTO-PAD PURELY NUMERIC NO SPM TO 4 DIGITS
@@ -257,7 +258,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
 
         const bidang = getCellStringVal(5) || userBidang;
         const kodeSubKegiatan = getCellStringVal(6);
-        const pekerjaan = getCellStringVal(7);
+        const pekerjaan = getCellStringVal(7); // Keterangan
         const noSp2d = getCellStringVal(8);
         const tglCairSp2d = getCellStringVal(9);
 

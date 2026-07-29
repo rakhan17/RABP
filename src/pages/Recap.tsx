@@ -302,22 +302,26 @@ export default function Recap() {
 
         <div className="overflow-x-auto custom-scrollbar print-table-wrapper">
           {recapType === 'antar_berkas' ? (
-            /* 1. Tabel Rekap Antar Berkas (6 Columns) */
+            /* 1. Tabel Rekap Antar Berkas (10 Columns) */
             <table className="min-w-full divide-y divide-gray-200 text-xs border-collapse">
               <thead className="bg-gray-50 text-[10px] font-bold text-gray-600 uppercase tracking-wider print:static">
                 <tr className="divide-x divide-gray-200">
                   <th className="px-3 py-2 text-center w-10">No</th>
-                  <th className="px-3 py-2 text-left">Tgl Antar Berkas</th>
+                  <th className="px-3 py-2 text-left">Tgl Antar</th>
                   <th className="px-3 py-2 text-left">No SPM</th>
                   <th className="px-3 py-2 text-left">Nama Rekanan</th>
                   <th className="px-3 py-2 text-right">Nilai Kwitansi (Rp)</th>
-                  <th className="px-3 py-2 text-left">Uraian / Pekerjaan</th>
+                  <th className="px-3 py-2 text-left">Nama Bidang</th>
+                  <th className="px-3 py-2 text-left">Sub Kegiatan</th>
+                  <th className="px-3 py-2 text-left">Keterangan</th>
+                  <th className="px-3 py-2 text-left">No SP2D</th>
+                  <th className="px-3 py-2 text-left">Tgl Cair SP2D</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-xs text-gray-400">
+                    <td colSpan={10} className="px-4 py-10 text-center text-xs text-gray-400">
                       Tidak ada data rekapitulasi yang sesuai filter.
                     </td>
                   </tr>
@@ -327,9 +331,13 @@ export default function Recap() {
                       <td className="px-3 py-2 text-center text-gray-400 font-mono text-[11px] bg-gray-50/50 print:bg-transparent">{idx + 1}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-gray-700">{row.tglAntarBerkas || '-'}</td>
                       <td className="px-3 py-2 font-mono font-medium text-gray-800 whitespace-nowrap">{row.noSpm || '-'}</td>
-                      <td className="px-3 py-2 font-semibold text-gray-900 truncate max-w-[200px] print:max-w-none">{row.namaRekanan || '-'}</td>
+                      <td className="px-3 py-2 font-semibold text-gray-900 truncate max-w-[180px] print:max-w-none">{row.namaRekanan || '-'}</td>
                       <td className="px-3 py-2 text-right font-bold text-emerald-700 whitespace-nowrap print:text-black">{formatCurrency(row.nilaiKwitansi)}</td>
-                      <td className="px-3 py-2 text-gray-600 truncate max-w-[350px] print:max-w-none print:whitespace-normal">{row.pekerjaan || '-'}</td>
+                      <td className="px-3 py-2 text-gray-600 truncate max-w-[140px] print:max-w-none">{row.bidang || '-'}</td>
+                      <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{row.kodeSubKegiatan || '-'}</td>
+                      <td className="px-3 py-2 text-gray-600 truncate max-w-[240px] print:max-w-none print:whitespace-normal">{row.pekerjaan || '-'}</td>
+                      <td className="px-3 py-2 font-mono font-bold text-emerald-600 whitespace-nowrap print:text-black">{row.noSp2d || '-'}</td>
+                      <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{row.tglCairSp2d || '-'}</td>
                     </tr>
                   ))
                 )}
@@ -343,7 +351,7 @@ export default function Recap() {
                     <td className="px-3 py-2 text-right text-[#0f9d58] text-xs font-bold print:text-black">
                       {formatCurrency(totalNilaiKwitansi)}
                     </td>
-                    <td className="px-3 py-2"></td>
+                    <td colSpan={5} className="px-3 py-2"></td>
                   </tr>
                 </tfoot>
               )}
