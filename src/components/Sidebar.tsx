@@ -80,7 +80,7 @@ export default function Sidebar() {
       <div className="p-4 shrink-0 mt-auto">
         <button
           onClick={logout}
-          className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-full text-sm font-medium text-[#444746] hover:bg-gray-200/80 transition-all duration-200 ripple"
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-full text-sm font-medium text-white bg-[#0b57d0] hover:bg-[#0842a0] transition-all duration-200 ripple shadow-sm"
         >
           <LogOut className="w-[18px] h-[18px]" strokeWidth={2.5} />
           <span>Logout</span>

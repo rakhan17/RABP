@@ -97,7 +97,7 @@ export default function Dashboard() {
             <button
               onClick={triggerManualSave}
               disabled={isSyncing}
-              className="flex items-center space-x-2 px-6 py-2.5 rounded-full text-sm font-medium bg-[#f1f3f4] text-[#444746] hover:bg-[#e2e2e2] transition-all duration-200 ripple-dark disabled:opacity-70 shadow-sm"
+              className="flex items-center space-x-2 px-6 py-2.5 rounded-full text-sm font-medium bg-[#0b57d0] text-white hover:bg-[#0842a0] transition-all duration-200 ripple disabled:opacity-70 shadow-sm"
             >
               <Save className="h-4 w-4" strokeWidth={2.5} />
               <span>Simpan Data</span>

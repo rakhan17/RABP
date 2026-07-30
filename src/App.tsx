@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import SearchSp2d from './pages/SearchSp2d';
 import Recap from './pages/Recap';
 import FormSp2d from './pages/FormSp2d';
+import MobileBlocker from './components/MobileBlocker';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -19,10 +20,12 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return user ? <>{children}</> : <Navigate to="/login" />;
 };
 
+
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
+    <MobileBlocker>
+      <AuthProvider>
+        <DataProvider>
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -39,6 +42,7 @@ function App() {
         </Router>
       </DataProvider>
     </AuthProvider>
+    </MobileBlocker>
   );
 }
 

@@ -122,7 +122,7 @@ export default function FormSp2d() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-gray-900 bg-white border border-gray-300 rounded-lg px-4 py-2 shadow-sm transition-colors"
+          className="inline-flex items-center space-x-2 text-sm font-medium text-[#444746] hover:text-[#1f1f1f] hover:bg-gray-100 bg-white border border-gray-300 rounded-full px-4 py-2 shadow-sm transition-colors ripple"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Kembali ke Dashboard</span>
@@ -269,14 +269,14 @@ export default function FormSp2d() {
               type="button"
               onClick={() => navigate('/')}
               disabled={saving}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-[#0b57d0] hover:bg-[#e9eef6] focus:outline-none transition-colors disabled:opacity-50 ripple"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={saving || !isAdmin}
-              className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+              className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-full bg-[#0b57d0] hover:bg-[#0842a0] text-white text-sm font-medium shadow-sm focus:outline-none transition-colors disabled:bg-blue-300 ripple"
             >
               {saving ? (
                 <>

@@ -170,14 +170,14 @@ export default function Recap() {
             <button
               onClick={downloadPDF}
               disabled={loading || filteredData.length === 0}
-              className="flex items-center space-x-2 bg-white text-[#444746] hover:bg-gray-100 hover:text-[#1f1f1f] border border-gray-300 disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple"
+              className="flex items-center space-x-2 bg-[#e9eef6] text-[#0b57d0] hover:bg-[#d3e3fd] disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple shadow-sm"
             >
               <Download className="h-4 w-4" strokeWidth={2.5} />
               <span>Cetak PDF</span>
             </button>
             <button
               onClick={handleExportExcel}
-              className="flex items-center space-x-2 bg-[#f1f3f4] hover:bg-[#e2e2e2] text-[#444746] disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple-dark shadow-sm"
+              className="flex items-center space-x-2 bg-[#0b57d0] hover:bg-[#0842a0] text-white disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple shadow-sm"
             >
               <FileDown className="h-4 w-4" strokeWidth={2.5} />
               <span>Ekspor Excel</span>
