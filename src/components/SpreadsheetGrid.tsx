@@ -95,7 +95,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
     const cells: any[] = [];
     const heights: Record<number, number> = {};
 
-    // 1. INJECT GREEN HEADER INTO ROW 0 (So it scrolls and resizes nicely with columns)
+    // 1. INJECT GRAY HEADER INTO ROW 0 (So it scrolls and resizes nicely with columns)
     heights[0] = 36; // Header height
     COLUMN_TITLES.forEach((title, cIdx) => {
       cells.push({
@@ -104,8 +104,8 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         v: {
           v: title,
           m: title,
-          bg: '#0f9d58', // Green background
-          fc: '#ffffff', // White text
+          bg: '#f1f3f4', // Google M3 Neutral Gray
+          fc: '#444746', // Google M3 Dark Gray Text
           bl: 1,         // Bold
           vt: 1,         // Vertical center alignment
           ht: 1,         // Horizontal center alignment
@@ -188,12 +188,12 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
     () => [
       {
         name: isKeuangan ? 'Semua Bidang' : userBidang || 'Register SP2D',
-        color: '#0f9d58', // Google Sheets Green Tab
+        color: '#e9eef6', // Neutral/Blue tint M3 Tab
         status: 1,
         order: 0,
         row: Math.max(100, data.length + 30),
         column: 10, // Exactly 10 columns
-        frozen: { type: 'row' as const }, // Freezes Row 0 (Our Green Custom Header)
+        frozen: { type: 'row' as const }, // Freezes Row 0 (Our Custom Header)
         config: {
           rowlen: rowHeights,
           columnlen: COLUMN_WIDTHS,
@@ -334,15 +334,31 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
           if (!rowCells || r === 0) return; // Skip header
           const cell = rowCells[2]; // No SPM is column index 2
           if (cell) {
-            const rawVal = cell.v !== undefined && cell.v !== null ? String(cell.v).trim() : '';
+            // Get raw value prioritizing 'm' (display text) over 'v' (raw value)
+            const rawVal = cell.m !== undefined && cell.m !== null ? String(cell.m).trim() :
+                           cell.v !== undefined && cell.v !== null ? String(cell.v).trim() : '';
+                           
+            // If it's purely numeric and needs padding (less than 4 digits)
             if (/^\d+$/.test(rawVal) && rawVal.length > 0 && rawVal.length < 4) {
               const padded = rawVal.padStart(4, '0');
               try {
-                // Instantly overwrite the stripped number with the padded text version
-                workbookRef.current?.setCellValue?.(r, 2, padded);
+                // Pass full cell object with text format to force FortuneSheet to render the leading zeros
+                workbookRef.current?.setCellValue?.(r, 2, {
+                  v: padded,
+                  m: padded,
+                  ct: { fa: '@', t: 's' }
+                });
               } catch (e) {
                 // Ignore errors
               }
+            } else if (cell.ct?.t !== 's' && rawVal) {
+              // Ensure even 4-digit numbers pasted get the text format so they don't break later
+              try {
+                workbookRef.current?.setCellValue?.(r, 2, {
+                  ...cell,
+                  ct: { fa: '@', t: 's' }
+                });
+              } catch (e) {}
             }
           }
         });

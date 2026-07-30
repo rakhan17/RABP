@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserByUsername } from '../lib/users';
-import { Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -29,72 +29,82 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Login Sistem RABP</h1>
-          <p className="text-gray-500 mt-2">Silakan masuk menggunakan akun Anda</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] p-4 sm:p-6">
+      <div className="bg-white p-8 sm:p-12 sm:pb-8 rounded-[28px] max-w-[448px] w-full border border-gray-200/60 shadow-sm transition-all duration-300">
+        
+        {/* Google-like Header */}
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img src="/logo.svg" alt="Logo" className="w-14 h-14 object-contain drop-shadow-sm mb-4" />
+          <h1 className="text-[32px] leading-[40px] font-normal text-[#1f1f1f] mb-2 tracking-tight">Login Sistem</h1>
+          <p className="text-[16px] text-[#444746]">Melanjutkan ke RABP</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <UserIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm"
-                placeholder="Masukkan Username"
-                required
-              />
-            </div>
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div className="relative">
+            <input
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="peer block w-full px-4 pt-6 pb-2 text-base text-[#1f1f1f] bg-transparent border border-gray-400 rounded focus:outline-none focus:ring-0 focus:border-[#0b57d0] focus:border-2 transition-colors placeholder-transparent"
+              placeholder="Username"
+              required
+            />
+            <label 
+              htmlFor="username" 
+              className="absolute left-4 top-4 text-[#444746] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-[#0b57d0] peer-focus:font-medium peer-valid:top-1.5 peer-valid:text-xs bg-white px-1 -ml-1"
+            >
+              Username
+            </label>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm"
-                placeholder="Masukkan Password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="peer block w-full px-4 pt-6 pb-2 pr-10 text-base text-[#1f1f1f] bg-transparent border border-gray-400 rounded focus:outline-none focus:ring-0 focus:border-[#0b57d0] focus:border-2 transition-colors placeholder-transparent"
+              placeholder="Password"
+              required
+            />
+            <label 
+              htmlFor="password" 
+              className="absolute left-4 top-4 text-[#444746] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-[#0b57d0] peer-focus:font-medium peer-valid:top-1.5 peer-valid:text-xs bg-white px-1 -ml-1"
+            >
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#444746] hover:text-[#1f1f1f] focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center font-medium">
+            <div className="text-[#d93025] text-[13px] font-medium flex items-center mt-1">
+              <svg aria-hidden="true" className="w-4 h-4 fill-current mr-2" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
+              </svg>
               {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:bg-blue-400"
-          >
-            {isLoading ? 'Memuat...' : 'Masuk'}
-          </button>
+          <div className="pt-8 flex items-center justify-end">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-white bg-[#0b57d0] hover:bg-[#0842a0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0b57d0] transition-colors disabled:bg-blue-300 ripple"
+            >
+              {isLoading ? 'Memuat...' : 'Selanjutnya'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

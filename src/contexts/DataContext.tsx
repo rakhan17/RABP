@@ -21,7 +21,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const isKeuangan = user?.username === 'Keuangan' || user?.bidang === 'Keuangan';
+  const isKeuangan = user?.username?.toLowerCase() === 'keuangan' || user?.bidang?.toLowerCase() === 'keuangan';
   const userBidang = user?.bidang || '';
 
   // 1. Filter dataset synchronously based on Bidang scoping

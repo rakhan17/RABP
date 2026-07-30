@@ -31,7 +31,8 @@ function App() {
               <Route path="add" element={<FormSp2d />} />
               <Route path="edit/:id" element={<FormSp2d />} />
               <Route path="search" element={<SearchSp2d />} />
-              <Route path="recap" element={<Recap />} />
+              <Route path="recap/:type" element={<Recap />} />
+              <Route path="recap" element={<Navigate to="/recap/antar-berkas" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -1,12 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #3b82f6; /* blue-500 */
+  --color-primary: #0b57d0; /* M3 Blue */
+  --color-primary-hover: #0842a0;
+  --color-secondary: #188038; /* M3 Green */
+  --color-surface: #f8f9fa; /* M3 Surface Light */
+  --color-surface-container: #e9eef6; /* Light blue tint for active */
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
-  background-color: #f3f4f6; /* gray-100 */
-  color: #1f2937; /* gray-800 */
+  background-color: var(--color-surface);
+  color: #1f1f1f;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Material Ripple Effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ripple::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 600ms linear;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+.ripple-dark::after {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Custom Scrollbar */

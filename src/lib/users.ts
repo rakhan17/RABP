@@ -6,29 +6,27 @@ export interface User {
 }
 
 export const USERS: User[] = [
-  { username: 'Keuangan', password: 'DPU01', role: 'admin', bidang: 'Keuangan' },
-  { username: 'Sekretariat', password: 'DPU02', role: 'viewer', bidang: 'Sekretariat' },
-  { username: 'Bidang JJ', password: 'DPU03', role: 'viewer', bidang: 'UPTD Jalan dan Jembatan' },
-  { username: 'Bidang SDA', password: 'DPU04', role: 'viewer', bidang: 'UPTD Drainase dan Bozem' },
-  { username: 'Bidang GP', password: 'DPU05', role: 'viewer', bidang: 'Bidang Gedung Pemerintahan' },
-  { username: 'Bidang AM', password: 'DPU06', role: 'viewer', bidang: 'Bidang Air Minum' },
-  { username: 'Bidang PLP', password: 'DPU07', role: 'viewer', bidang: 'Bidang Penyehatan Lingkungan Permukiman' },
-  { username: 'Bidang PR', password: 'DPU08', role: 'viewer', bidang: 'Bidang Penataan Ruang' }
+  { username: 'keuangan', password: 'DPU01', role: 'admin', bidang: 'Keuangan' },
+  { username: 'sekretariat', password: 'DPU02', role: 'viewer', bidang: 'Bidang Sekretariat' },
+  { username: 'bidang jj', password: 'DPU03', role: 'viewer', bidang: 'Bidang Jalan dan Jembatan' },
+  { username: 'bidang sda', password: 'DPU04', role: 'viewer', bidang: 'Bidang Sumber Daya Air' },
+  { username: 'bidang plp', password: 'DPU05', role: 'viewer', bidang: 'Bidang Penyehatan Lingkungan Permukiman' },
+  { username: 'uptd drainase', password: 'DPU06', role: 'viewer', bidang: 'UPTD Drainase dan Bozem' },
+  { username: 'uptd jj', password: 'DPU07', role: 'viewer', bidang: 'UPTD Jalan dan Jembatan' }
 ];
 
 export const BINDANG_LIST = [
   'Keuangan',
-  'Sekretariat',
-  'UPTD Jalan dan Jembatan',
-  'UPTD Drainase dan Bozem',
-  'Bidang Gedung Pemerintahan',
-  'Bidang Air Minum',
+  'Bidang Sekretariat',
+  'Bidang Jalan dan Jembatan',
+  'Bidang Sumber Daya Air',
   'Bidang Penyehatan Lingkungan Permukiman',
-  'Bidang Penataan Ruang'
+  'UPTD Drainase dan Bozem',
+  'UPTD Jalan dan Jembatan'
 ];
 
 export async function getUserByUsername(username: string): Promise<User | null> {
-  const normalizedUsername = username.toLowerCase();
+  const normalizedUsername = username.toLowerCase().trim();
   const user = USERS.find(u => u.username.toLowerCase() === normalizedUsername);
   return user || null;
 }

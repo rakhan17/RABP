@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Sidebar from './Sidebar';
 
 export default function Layout() {
   const { user, loading } = useAuth();
@@ -13,8 +14,9 @@ export default function Layout() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-white flex flex-col m-0 p-0">
-      <main className="flex-1 w-full h-full overflow-hidden relative">
+    <div className="h-screen w-screen overflow-hidden bg-gray-50 flex m-0 p-0">
+      <Sidebar />
+      <main className="flex-1 w-full h-full overflow-hidden relative bg-white">
         <Outlet />
       </main>
     </div>
