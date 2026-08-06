@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { addRegistrationToFirestore, updateRegistrationInFirestore } from '../lib/firestoreService';
-import { BINDANG_LIST } from '../lib/users';
+import { BINDANG_LIST, SUB_KEGIATAN_LIST } from '../lib/users';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 
 export default function FormSp2d() {
@@ -216,13 +216,18 @@ export default function FormSp2d() {
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Kode Sub Kegiatan
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.kodeSubKegiatan}
                 onChange={(e) => setFormData({ ...formData, kodeSubKegiatan: e.target.value })}
-                placeholder="Kode Sub Kegiatan"
                 className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white"
-              />
+              >
+                <option value="">-- Pilih Sub Kegiatan --</option>
+                {SUB_KEGIATAN_LIST.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

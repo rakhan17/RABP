@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import type { Sp2dRegistration } from '../types';
-import { BINDANG_LIST } from '../lib/users';
+import { BINDANG_LIST, SUB_KEGIATAN_LIST } from '../lib/users';
 import { FileDown, Download, Filter, Table2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -18,6 +18,8 @@ export default function Recap() {
   const [bidang, setBidang] = useState(isKeuangan ? '' : userBidang);
   const [tglMulai, setTglMulai] = useState('');
   const [tglSelesai, setTglSelesai] = useState('');
+  const [bulan, setBulan] = useState('');
+  const [kodeSubKegiatan, setKodeSubKegiatan] = useState('');
 
   // Lock bidang for non-Keuangan users
   useEffect(() => {
@@ -52,6 +54,16 @@ export default function Recap() {
       return dateStr;
     };
 
+    const getMonthOf = (dateStr: string) => {
+      const iso = parseToIsoDate(dateStr);
+      if (!iso) return '';
+      const parts = iso.split('-');
+      if (parts.length >= 2) {
+        return parts[1];
+      }
+      return '';
+    };
+
     let result = data;
 
     if (bidang) {
@@ -59,22 +71,31 @@ export default function Recap() {
       result = result.filter((item) => item.bidang && item.bidang.toLowerCase().trim() === bNorm);
     }
 
-    if (tglMulai) {
-      result = result.filter((item) => {
-        const itemDate = parseToIsoDate(item.tglAntarBerkas);
-        return itemDate >= tglMulai;
-      });
-    }
+    if (recapType === 'pencairan_sp2d') {
+      if (bulan) {
+        result = result.filter((item) => getMonthOf(item.tglAntarBerkas) === bulan);
+      }
+      if (kodeSubKegiatan) {
+        result = result.filter((item) => item.kodeSubKegiatan && item.kodeSubKegiatan.trim() === kodeSubKegiatan);
+      }
+    } else {
+      if (tglMulai) {
+        result = result.filter((item) => {
+          const itemDate = parseToIsoDate(item.tglAntarBerkas);
+          return itemDate >= tglMulai;
+        });
+      }
 
-    if (tglSelesai) {
-      result = result.filter((item) => {
-        const itemDate = parseToIsoDate(item.tglAntarBerkas);
-        return itemDate && itemDate <= tglSelesai;
-      });
+      if (tglSelesai) {
+        result = result.filter((item) => {
+          const itemDate = parseToIsoDate(item.tglAntarBerkas);
+          return itemDate && itemDate <= tglSelesai;
+        });
+      }
     }
 
     setFilteredData(result);
-  }, [bidang, tglMulai, tglSelesai, data]);
+  }, [bidang, tglMulai, tglSelesai, bulan, kodeSubKegiatan, data, recapType]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
@@ -210,25 +231,63 @@ export default function Recap() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Dari Tanggal (Antar Berkas)</label>
-              <input
-                type="date"
-                value={tglMulai}
-                onChange={(e) => setTglMulai(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
-              />
-            </div>
+            {recapType === 'pencairan_sp2d' ? (
+              <>
+                <div>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Bulan</label>
+                  <select
+                    value={bulan}
+                    onChange={(e) => setBulan(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
+                  >
+                    <option value="">-- Semua Bulan --</option>
+                    {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => (
+                      <option key={m} value={String(i + 1).padStart(2, '0')}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Sampai Tanggal (Antar Berkas)</label>
-              <input
-                type="date"
-                value={tglSelesai}
-                onChange={(e) => setTglSelesai(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
-              />
-            </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Kode Sub Kegiatan</label>
+                  <select
+                    value={kodeSubKegiatan}
+                    onChange={(e) => setKodeSubKegiatan(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
+                  >
+                    <option value="">-- Semua Sub Kegiatan --</option>
+                    {SUB_KEGIATAN_LIST.map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Dari Tanggal (Antar Berkas)</label>
+                  <input
+                    type="date"
+                    value={tglMulai}
+                    onChange={(e) => setTglMulai(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Sampai Tanggal (Antar Berkas)</label>
+                  <input
+                    type="date"
+                    value={tglSelesai}
+                    onChange={(e) => setTglSelesai(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -239,10 +298,24 @@ export default function Recap() {
           Laporan {recapType === 'antar_berkas' ? 'Rekapitulasi Antar Berkas' : 'Rekapitulasi Pencairan SP2D'}
         </h1>
         <p className="text-sm text-gray-800 mt-1">
-          Bidang: <span className="font-bold">{bidang || 'Semua Bidang'}</span> | Periode:{' '}
-          <span className="font-bold">
-            {tglMulai ? tglMulai : 'Awal'} s/d {tglSelesai ? tglSelesai : 'Akhir'}
-          </span>
+          Bidang: <span className="font-bold">{bidang || 'Semua Bidang'}</span>
+          {recapType === 'pencairan_sp2d' ? (
+            <>
+              {' '}| Bulan:{' '}
+              <span className="font-bold">
+                {bulan ? ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][parseInt(bulan, 10) - 1] : 'Semua'}
+              </span>
+              {' '}| Sub Kegiatan:{' '}
+              <span className="font-bold">{kodeSubKegiatan || 'Semua'}</span>
+            </>
+          ) : (
+            <>
+              {' '}| Periode:{' '}
+              <span className="font-bold">
+                {tglMulai ? tglMulai : 'Awal'} s/d {tglSelesai ? tglSelesai : 'Akhir'}
+              </span>
+            </>
+          )}
         </p>
       </div>
 

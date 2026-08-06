@@ -4,6 +4,7 @@ import type { WorkbookInstance } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
 import type { Sp2dRegistration } from '../types';
 import { addRegistrationToFirestore, updateRegistrationInFirestore } from '../lib/firestoreService';
+import { BINDANG_LIST, SUB_KEGIATAN_LIST } from '../lib/users';
 
 export interface SpreadsheetGridRef {
   saveData: () => Promise<void>;
@@ -194,6 +195,36 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         row: Math.max(100, data.length + 30),
         column: 10, // Exactly 10 columns
         frozen: { type: 'row' as const }, // Freezes Row 0 (Our Custom Header)
+dataVerification: (() => {
+          const dv: Record<string, any> = {};
+          const maxRow = Math.max(200, data.length + 50);
+          const bidangOptions = BINDANG_LIST.join(',');
+          const subKegiatanOptions = SUB_KEGIATAN_LIST.join(',');
+          
+          for (let r = 1; r < maxRow; r++) {
+            dv[`${r}_5`] = {
+              type: 'dropdown',
+              type2: null,
+              value1: bidangOptions,
+              value2: '',
+              checked: false,
+              prohibitInput: true,
+              hintShow: false,
+              hintText: '',
+            };
+            dv[`${r}_6`] = {
+              type: 'dropdown',
+              type2: null,
+              value1: subKegiatanOptions,
+              value2: '',
+              checked: false,
+              prohibitInput: true,
+              hintShow: false,
+              hintText: '',
+            };
+          }
+          return dv;
+        })(),
         config: {
           rowlen: rowHeights,
           columnlen: COLUMN_WIDTHS,
