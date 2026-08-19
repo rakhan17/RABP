@@ -2,8 +2,7 @@ import { useMemo, useState, useCallback, useRef, useEffect, useImperativeHandle,
 import { Workbook } from '@fortune-sheet/react';
 import type { WorkbookInstance } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
-import type { Sp2dRegistration } from '../types';
-import { addRegistrationToFirestore, updateRegistrationInFirestore } from '../lib/firestoreService';
+import { addToFirestore, updateInFirestore } from '../lib/firestoreService';
 import { BINDANG_LIST, SUB_KEGIATAN_LIST } from '../lib/users';
 
 export interface SpreadsheetGridRef {
@@ -11,7 +10,8 @@ export interface SpreadsheetGridRef {
 }
 
 interface SpreadsheetGridProps {
-  data: Sp2dRegistration[];
+  data: any[];
+  inputType: 'spp' | 'spm' | 'sp2d' | 'rekap';
   isAdmin: boolean;
   userBidang: string;
   isKeuangan: boolean;
@@ -19,61 +19,152 @@ interface SpreadsheetGridProps {
   onSaveSuccess?: () => void;
 }
 
-// 10 Columns in exact requested order:
-const COLUMN_TITLES = [
-  'Tanggal Antar Berkas',
-  'Bulan',
-  'No SPM',
-  'Nama Rekanan',
-  'Nilai Kwitansi',
-  'Nama Bidang',
-  'Kode Sub Kegiatan',
-  'Keterangan',
-  'No SP2D',
-  'Tanggal Cair SP2D',
-];
-
-const COLUMN_WIDTHS: Record<number, number> = {
-  0: 160, // Tanggal Antar Berkas
-  1: 120, // Bulan
-  2: 170, // No SPM
-  3: 240, // Nama Rekanan
-  4: 170, // Nilai Kwitansi
-  5: 170, // Nama Bidang
-  6: 150, // Kode Sub Kegiatan
-  7: 340, // Keterangan
-  8: 200, // No SP2D
-  9: 160, // Tanggal Cair SP2D
+const CONFIG: Record<string, { collection: string, merges?: Record<string, any>, headerRows: number, headers: any[][], columns: any[] }> = {
+  spp: {
+    collection: 'spp_data',
+    headerRows: 2,
+    merges: {
+      "0_0": { r: 0, c: 0, rs: 2, cs: 1 },
+      "0_1": { r: 0, c: 1, rs: 2, cs: 1 },
+      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
+      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
+      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
+      "0_5": { r: 0, c: 5, rs: 2, cs: 1 },
+      "0_6": { r: 0, c: 6, rs: 1, cs: 3 },
+      "0_9": { r: 0, c: 9, rs: 2, cs: 1 },
+      "0_10": { r: 0, c: 10, rs: 2, cs: 1 },
+    },
+    headers: [
+      ['Tanggal SPP', 'Nomor SPP', 'Unit SKPD', 'Nama Penerima', 'Keterangan', 'Jenis SPP', 'Nilai (Rp)', null, null, 'Bidang', 'Sub kegiatan'],
+      [null, null, null, null, null, null, 'Bruto', 'Potongan', 'Neto', null, null]
+    ],
+    columns: [
+      { key: 'tanggalSpp', width: 140 },
+      { key: 'nomorSpp', width: 180 },
+      { key: 'unitSkpd', width: 150 },
+      { key: 'namaPenerima', width: 220 },
+      { key: 'keterangan', width: 300 },
+      { key: 'jenisSpp', width: 140 },
+      { key: 'nilaiBruto', width: 150, isCurrency: true },
+      { key: 'nilaiPotongan', width: 150, isCurrency: true },
+      { key: 'nilaiNeto', width: 150, isCurrency: true },
+      { key: 'bidang', width: 150, isDropdown: true, dropType: 'bidang' },
+      { key: 'subKegiatan', width: 150, isDropdown: true, dropType: 'subKegiatan' },
+    ]
+  },
+  spm: {
+    collection: 'spm_data',
+    headerRows: 2,
+    merges: {
+      "0_0": { r: 0, c: 0, rs: 2, cs: 1 },
+      "0_1": { r: 0, c: 1, rs: 2, cs: 1 },
+      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
+      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
+      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
+      "0_5": { r: 0, c: 5, rs: 2, cs: 1 },
+      "0_6": { r: 0, c: 6, rs: 1, cs: 3 },
+    },
+    headers: [
+      ['Tanggal SPM', 'Nomor SPM', 'Unit SKPD', 'Nama Penerima', 'Keterangan', 'Jenis SPM', 'Nilai (Rp)', null, null],
+      [null, null, null, null, null, null, 'Bruto', 'Potongan', 'Neto']
+    ],
+    columns: [
+      { key: 'tanggalSpm', width: 140 },
+      { key: 'nomorSpm', width: 180 },
+      { key: 'unitSkpd', width: 150 },
+      { key: 'namaPenerima', width: 220 },
+      { key: 'keterangan', width: 300 },
+      { key: 'jenisSpm', width: 140 },
+      { key: 'nilaiBruto', width: 150, isCurrency: true },
+      { key: 'nilaiPotongan', width: 150, isCurrency: true },
+      { key: 'nilaiNeto', width: 150, isCurrency: true },
+    ]
+  },
+  sp2d: {
+    collection: 'sp2d_data',
+    headerRows: 2,
+    merges: {
+      "0_0": { r: 0, c: 0, rs: 1, cs: 2 },
+      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
+      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
+      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
+      "0_5": { r: 0, c: 5, rs: 2, cs: 1 },
+      "0_6": { r: 0, c: 6, rs: 2, cs: 1 },
+      "0_7": { r: 0, c: 7, rs: 1, cs: 3 },
+      "0_10": { r: 0, c: 10, rs: 2, cs: 1 },
+      "0_11": { r: 0, c: 11, rs: 2, cs: 1 },
+    },
+    headers: [
+      ['Tanggal SP2D', null, 'Nomor SP2D', 'Unit SKPD', 'Nama Penerima', 'Keterangan', 'Jenis SP2D', 'Pajak/Potongan', null, null, 'Kode Biling', 'Nomor NTPN'],
+      ['Pembuatan', 'Pencairan', null, null, null, null, null, 'Jenis', 'Nama', 'Jumlah', null, null]
+    ],
+    columns: [
+      { key: 'tanggalSp2dPembuatan', width: 140 },
+      { key: 'tanggalSp2dPencairan', width: 140 },
+      { key: 'nomorSp2d', width: 180 },
+      { key: 'unitSkpd', width: 150 },
+      { key: 'namaPenerima', width: 220 },
+      { key: 'keterangan', width: 300 },
+      { key: 'jenisSp2d', width: 140 },
+      { key: 'pajakJenis', width: 140 },
+      { key: 'pajakNama', width: 160 },
+      { key: 'pajakJumlah', width: 150, isCurrency: true },
+      { key: 'kodeBiling', width: 160 },
+      { key: 'nomorNtpn', width: 160 },
+    ]
+  },
+  rekap: {
+    collection: 'read_only',
+    headerRows: 2,
+    merges: {
+      "0_0": { r: 0, c: 0, rs: 2, cs: 1 },
+      "0_1": { r: 0, c: 1, rs: 2, cs: 1 },
+      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
+      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
+      "0_4": { r: 0, c: 4, rs: 1, cs: 2 },
+      "0_6": { r: 0, c: 6, rs: 2, cs: 1 },
+      "0_7": { r: 0, c: 7, rs: 2, cs: 1 },
+      "0_8": { r: 0, c: 8, rs: 2, cs: 1 },
+      "0_9": { r: 0, c: 9, rs: 1, cs: 3 },
+      "0_12": { r: 0, c: 12, rs: 1, cs: 3 },
+      "0_15": { r: 0, c: 15, rs: 2, cs: 1 },
+      "0_16": { r: 0, c: 16, rs: 2, cs: 1 },
+      "0_17": { r: 0, c: 17, rs: 2, cs: 1 },
+      "0_18": { r: 0, c: 18, rs: 2, cs: 1 },
+      "0_19": { r: 0, c: 19, rs: 2, cs: 1 },
+    },
+    headers: [
+      ['Tanggal SPP', 'Nomor SPP', 'Tanggal SPM', 'Nomor SPM', 'Tanggal SP2D', null, 'Nomor SP2D', 'Unit SKPD', 'Nama Penerima', 'Nilai (Rp)', null, null, 'Pajak/Potongan', null, null, 'Kode Biling', 'Nomor NTPN', 'Keterangan', 'Bidang', 'Sub kegiatan'],
+      [null, null, null, null, 'Pembuatan', 'Pencairan', null, null, null, 'Bruto', 'Potongan', 'Neto', 'Jenis', 'Nama', 'Jumlah', null, null, null, null, null]
+    ],
+    columns: [
+      { key: 'tanggalSpp', width: 140 },
+      { key: 'nomorSpp', width: 160 },
+      { key: 'tanggalSpm', width: 140 },
+      { key: 'nomorSpm', width: 160 },
+      { key: 'tanggalSp2dPembuatan', width: 140 },
+      { key: 'tanggalSp2dPencairan', width: 140 },
+      { key: 'nomorSp2d', width: 160 },
+      { key: 'unitSkpd', width: 150 },
+      { key: 'namaPenerima', width: 220 },
+      { key: 'nilaiBruto', width: 150, isCurrency: true },
+      { key: 'nilaiPotongan', width: 150, isCurrency: true },
+      { key: 'nilaiNeto', width: 150, isCurrency: true },
+      { key: 'pajakJenis', width: 140 },
+      { key: 'pajakNama', width: 160 },
+      { key: 'pajakJumlah', width: 150, isCurrency: true },
+      { key: 'kodeBiling', width: 140 },
+      { key: 'nomorNtpn', width: 140 },
+      { key: 'keterangan', width: 300 },
+      { key: 'bidang', width: 140 },
+      { key: 'subKegiatan', width: 140 },
+    ]
+  }
 };
-
-// Indonesian Month Helper
-function getIndonesianMonth(dateStr: string): string {
-  if (!dateStr) return '';
-  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-  for (const m of months) {
-    if (dateStr.toLowerCase().includes(m.toLowerCase())) return m;
-  }
-
-  const d = new Date(dateStr);
-  if (!isNaN(d.getTime())) {
-    return months[d.getMonth()];
-  }
-
-  const parts = dateStr.split(/[-/\s]/);
-  if (parts.length >= 2) {
-    let mNum = parseInt(parts[1], 10);
-    if (isNaN(mNum)) mNum = parseInt(parts[0], 10);
-    if (!isNaN(mNum) && mNum >= 1 && mNum <= 12) {
-      return months[mNum - 1];
-    }
-  }
-
-  return '';
-}
 
 const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
   data,
+  inputType,
   isAdmin,
   userBidang,
   isKeuangan,
@@ -81,167 +172,158 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
   onSaveSuccess,
 }, ref) => {
   const [isSyncing, setIsSyncing] = useState(false);
-  const canEditSpreadsheet = isAdmin || isKeuangan;
+  const isRekap = inputType === 'rekap';
+  const canEditSpreadsheet = (isAdmin || isKeuangan) && !isRekap;
   const currentSheetDataRef = useRef<any[]>([]);
-
   const workbookRef = useRef<WorkbookInstance>(null);
 
-  // Notify parent of sync state for header badge display
   useEffect(() => {
     onSyncStateChange?.(isSyncing);
   }, [isSyncing, onSyncStateChange]);
 
-  // Transform dataset into FortuneSheet celldata format
-  const { celldata, rowHeights } = useMemo(() => {
+  const conf = CONFIG[inputType];
+
+  const { celldata, rowHeights, columnWidths } = useMemo(() => {
     const cells: any[] = [];
     const heights: Record<number, number> = {};
+    const cWidths: Record<number, number> = {};
 
-    // 1. INJECT GRAY HEADER INTO ROW 0 (So it scrolls and resizes nicely with columns)
-    heights[0] = 36; // Header height
-    COLUMN_TITLES.forEach((title, cIdx) => {
-      cells.push({
-        r: 0,
-        c: cIdx,
-        v: {
-          v: title,
-          m: title,
-          bg: '#f1f3f4', // Google M3 Neutral Gray
-          fc: '#444746', // Google M3 Dark Gray Text
-          bl: 1,         // Bold
-          vt: 1,         // Vertical center alignment
-          ht: 1,         // Horizontal center alignment
-          ct: { fa: '@', t: 's' } // String format
-        },
+    for (let r = 0; r < conf.headerRows; r++) {
+      heights[r] = 36;
+      conf.headers[r].forEach((title, cIdx) => {
+        if (r === 0) cWidths[cIdx] = conf.columns[cIdx].width;
+        
+        let mcData: any = undefined;
+        let isSlave = false;
+        if (conf.merges) {
+          for (const m of Object.values(conf.merges)) {
+            if (r >= m.r && r < m.r + m.rs && cIdx >= m.c && cIdx < m.c + m.cs) {
+              if (r === m.r && cIdx === m.c) {
+                mcData = m; // Main cell
+              } else {
+                mcData = { r: m.r, c: m.c }; // Slave cell
+                isSlave = true;
+              }
+              break;
+            }
+          }
+        }
+
+        if (title !== null || isSlave) {
+          cells.push({
+            r,
+            c: cIdx,
+            v: {
+              v: title || '',
+              m: title || '',
+              bg: '#f1f3f4',
+              fc: '#444746',
+              bl: 1,
+              vt: 0,
+              ht: 0,
+              tb: 2,
+              ct: { fa: '@', t: 's' },
+              ...(mcData ? { mc: mcData } : {})
+            },
+          });
+        }
       });
-    });
+    }
 
-    // 2. INJECT USER DATA STARTING AT ROW 1
     data.forEach((row, rIdx) => {
-      const r = rIdx + 1; // User Data starts at Grid Row 1
-      const tglAntar = row.tglAntarBerkas || '';
-      const bulanCalc = getIndonesianMonth(tglAntar);
-
-      const rowValues = [
-        tglAntar,               // Col 0
-        bulanCalc,              // Col 1
-        row.noSpm || '',        // Col 2
-        row.namaRekanan || '',  // Col 3
-        row.nilaiKwitansi || 0, // Col 4
-        row.bidang || '',       // Col 5
-        row.kodeSubKegiatan || '', // Col 6
-        row.pekerjaan || '',    // Col 7
-        row.noSp2d || '',       // Col 8
-        row.tglCairSp2d || '',  // Col 9
-      ];
-
-      // Auto row height minimum 36px
-      const maxTextLen = Math.max(
-        String(row.pekerjaan || '').length,
-        String(row.namaRekanan || '').length
-      );
-      heights[r] = maxTextLen > 35 ? Math.min(140, Math.max(38, Math.ceil(maxTextLen / 28) * 24)) : 36;
-
-      rowValues.forEach((val, cIdx) => {
-        const isKwitan = cIdx === 4; // Col 4 is Nilai Kwitansi
+      const dataRow = rIdx + conf.headerRows;
+      heights[dataRow] = 36;
+      conf.columns.forEach((col, cIdx) => {
+        const val = col.key === 'noIndex' ? rIdx + 1 : row[col.key];
         const strVal = val !== undefined && val !== null ? String(val) : '';
-
+        
         cells.push({
-          r,
+          r: dataRow,
           c: cIdx,
           v: {
-            v: isKwitan ? (Number(val) || 0) : strVal,
-            m: isKwitan
+            v: col.isCurrency ? (Number(val) || 0) : strVal,
+            m: col.isCurrency
               ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(val) || 0)
               : strVal,
-            vt: 1,
-            ht: isKwitan ? 2 : 1, // Right-align nominal, center others
-            ct: { fa: '@', t: 's' },
+            vt: 0,
+            ht: col.isCurrency ? 2 : 1,
+            tb: 2,
+            ct: col.isCurrency ? undefined : { fa: '@', t: 's' },
           },
         });
       });
     });
 
-    // 3. PRE-FILL EMPTY ROWS WITH TEXT FORMAT TO PREVENT LEADING ZERO STRIPPING
-    // FortuneSheet strips leading zeros on paste if the destination cell doesn't have an explicit text format.
-    const maxEmptyRows = Math.max(100, data.length + 30);
-    for (let r = data.length + 1; r < maxEmptyRows; r++) {
-      for (let c = 0; c < 10; c++) {
-        const isKwitan = c === 4;
-        cells.push({
-          r,
-          c,
-          v: {
-            v: '',
-            m: '',
-            vt: 1,
-            ht: isKwitan ? 2 : 1, // Right-align nominal, center others
-            ct: isKwitan ? undefined : { fa: '@', t: 's' },
-          },
-        });
+    if (!isRekap) {
+      const maxEmptyRows = Math.max(100, data.length + 30);
+      for (let r = data.length + 1; r < maxEmptyRows; r++) {
+        const dataRow = r - 1 + conf.headerRows;
+        for (let c = 0; c < conf.columns.length; c++) {
+          const isKwitan = conf.columns[c].isCurrency;
+          cells.push({
+            r: dataRow,
+            c,
+            v: {
+              v: '', m: '', vt: 0, tb: 2,
+              ht: isKwitan ? 2 : 1,
+              ct: isKwitan ? undefined : { fa: '@', t: 's' },
+            },
+          });
+        }
       }
     }
 
-    return { celldata: cells, rowHeights: heights };
-  }, [data]);
+    return { celldata: cells, rowHeights: heights, columnWidths: cWidths };
+  }, [data, conf, isRekap]);
 
-  // FortuneSheet Workbook data state locked to 10 columns
   const sheets = useMemo(
     () => [
       {
-        name: isKeuangan ? 'Semua Bidang' : userBidang || 'Register SP2D',
-        color: '#e9eef6', // Neutral/Blue tint M3 Tab
+        name: isKeuangan ? 'Semua Bidang' : userBidang || 'Input',
+        color: '#e9eef6',
         status: 1,
         order: 0,
-        row: Math.max(100, data.length + 30),
-        column: 10, // Exactly 10 columns
-        frozen: { type: 'row' as const }, // Freezes Row 0 (Our Custom Header)
-dataVerification: (() => {
+        row: isRekap ? data.length + conf.headerRows + 5 : Math.max(100, data.length + conf.headerRows + 20),
+        column: conf.columns.length,
+        frozen: { type: 'row' as const, range: { row_focus: conf.headerRows - 1, column_focus: 0 } },
+        dataVerification: (() => {
+          if (isRekap) return {};
           const dv: Record<string, any> = {};
           const maxRow = Math.max(200, data.length + 50);
-          const bidangOptions = BINDANG_LIST.join(',');
-          const subKegiatanOptions = SUB_KEGIATAN_LIST.join(',');
           
-          for (let r = 1; r < maxRow; r++) {
-            dv[`${r}_5`] = {
-              type: 'dropdown',
-              type2: null,
-              value1: bidangOptions,
-              value2: '',
-              checked: false,
-              prohibitInput: true,
-              hintShow: false,
-              hintText: '',
-            };
-            dv[`${r}_6`] = {
-              type: 'dropdown',
-              type2: null,
-              value1: subKegiatanOptions,
-              value2: '',
-              checked: false,
-              prohibitInput: true,
-              hintShow: false,
-              hintText: '',
-            };
-          }
+          conf.columns.forEach((col, cIdx) => {
+            if (col.isDropdown) {
+              const options = col.dropType === 'bidang' ? BINDANG_LIST.join(',') : SUB_KEGIATAN_LIST.join(',');
+              for (let r = conf.headerRows; r < maxRow; r++) {
+                dv[`${r}_${cIdx}`] = {
+                  type: 'dropdown',
+                  type2: null,
+                  value1: options,
+                  value2: '',
+                  checked: false,
+                  prohibitInput: true,
+                  hintShow: false,
+                  hintText: '',
+                };
+              }
+            }
+          });
           return dv;
         })(),
         config: {
           rowlen: rowHeights,
-          columnlen: COLUMN_WIDTHS,
+          columnlen: columnWidths,
+          merge: conf.merges || {},
         },
         celldata,
       },
     ],
-    [data, celldata, rowHeights, isKeuangan, userBidang]
+    [data, celldata, rowHeights, columnWidths, isKeuangan, userBidang, conf, isRekap]
   );
 
-  // Core Save to Firestore function
   const syncToFirestore = useCallback(async () => {
-    if (!isAdmin && !isKeuangan) return;
+    if (!canEditSpreadsheet || isRekap) return;
     
-    // Always get the MOST RECENT synchronous data directly from the FortuneSheet instance
-    // rather than waiting for the potentially debounced `onChange` event to fire,
-    // which can be buggy during large pastes.
     const instanceData = workbookRef.current?.getAllSheets()?.[0]?.data;
     const gridData = instanceData || currentSheetDataRef.current;
     
@@ -249,15 +331,12 @@ dataVerification: (() => {
 
     setIsSyncing(true);
     try {
-      // Iterate grid rows STARTING FROM ROW 1 (Ignore Row 0, which is our custom Header)
       let savedCount = 0;
-      console.log("Saving to Firestore. Total grid rows:", gridData.length);
-      for (let r = 1; r < gridData.length; r++) {
+      for (let r = conf.headerRows; r < gridData.length; r++) {
         const rowCells = gridData[r];
         if (!rowCells) continue;
 
-        // PRESERVE LEADING ZEROS
-        const getCellStringVal = (c: number): string => {
+        const getCellVal = (c: number): string => {
           const cell = rowCells[c];
           if (!cell) return '';
           if (cell.m !== undefined && cell.m !== null && String(cell.m).trim() !== '') return String(cell.m).trim();
@@ -265,148 +344,69 @@ dataVerification: (() => {
           return '';
         };
 
-        const tglAntarBerkas = getCellStringVal(0);
-        // Col 1 is 'Bulan' (Auto-calculated, no need to save)
-        let noSpm = getCellStringVal(2);
-        
-        // AUTO-PAD PURELY NUMERIC NO SPM TO 4 DIGITS
-        // This handles cases where pasting from Excel strips leading zeros (e.g. 0001 becomes 1).
-        if (/^\d+$/.test(noSpm) && noSpm.length < 4) {
-          noSpm = noSpm.padStart(4, '0');
-          // VISUALLY FIX IT ON THE SCREEN IMMEDIATELY so the user knows it worked!
-          try {
-            workbookRef.current?.setCellValue?.(r, 2, noSpm);
-          } catch (e) {
-            console.error("Failed to visually update padded SPM cell", e);
+        const payload: any = {};
+        let isEmpty = true;
+
+        conf.columns.forEach((col, cIdx) => {
+          const raw = getCellVal(cIdx);
+          if (raw) isEmpty = false;
+          
+          if (col.isCurrency) {
+             payload[col.key] = typeof raw === 'number' ? raw : Number(String(raw).replace(/[^0-9]/g, '')) || 0;
+          } else {
+             payload[col.key] = raw;
           }
-        }
+        });
 
-        const namaRekanan = getCellStringVal(3);
+        if (isEmpty) continue;
         
-        const rawNilaiCell = rowCells[4];
-        const rawNilai = rawNilaiCell?.v !== undefined ? rawNilaiCell.v : rawNilaiCell?.m;
-        const nilaiKwitansi = typeof rawNilai === 'number' ? rawNilai : Number(String(rawNilai || '').replace(/[^0-9]/g, '')) || 0;
+        // Auto padding zeroes for "nomor" string fields 
+        conf.columns.forEach((col) => {
+          if (col.key.toLowerCase().includes('nomor') && /^\d+$/.test(payload[col.key]) && payload[col.key].length < 4) {
+            payload[col.key] = payload[col.key].padStart(4, '0');
+          }
+        });
 
-        const bidang = getCellStringVal(5) || userBidang;
-        const kodeSubKegiatan = getCellStringVal(6);
-        const pekerjaan = getCellStringVal(7); // Keterangan
-        const noSp2d = getCellStringVal(8);
-        const tglCairSp2d = getCellStringVal(9);
-
-        // Skip completely blank rows
-        if (!tglAntarBerkas && !noSpm && !namaRekanan && !noSp2d && !pekerjaan && nilaiKwitansi === 0) {
-          continue;
-        }
-
-        // Map `r` (Grid Row) back to `data` array index (r - 1)
-        const existingRow = data[r - 1];
+        const existingRow = data[r - conf.headerRows];
 
         if (existingRow && existingRow.id) {
-          // Update existing Firestore row
-          console.log(`Updating existing row ${r}:`, { id: existingRow.id, noSpm, namaRekanan });
-          await updateRegistrationInFirestore(existingRow.id, {
-            tglAntarBerkas,
-            noSpm,
-            namaRekanan,
-            nilaiKwitansi,
-            bidang,
-            kodeSubKegiatan,
-            pekerjaan,
-            noSp2d,
-            tglCairSp2d,
-          });
+          await updateInFirestore(conf.collection, existingRow.id, payload);
           savedCount++;
-        } else if (tglAntarBerkas || noSpm || namaRekanan || noSp2d || pekerjaan || nilaiKwitansi > 0) {
-          // Add new row to Firestore
-          console.log(`Adding new row ${r} to Firestore:`, { tglAntarBerkas, noSpm, namaRekanan });
-          await addRegistrationToFirestore({
-            tglAntarBerkas,
-            noSpm,
-            namaRekanan,
-            nilaiKwitansi,
-            bidang: bidang || userBidang,
-            kodeSubKegiatan,
-            pekerjaan,
-            noSp2d,
-            tglCairSp2d,
-          });
+        } else {
+          await addToFirestore(conf.collection, payload);
           savedCount++;
         }
       }
-      console.log(`Save complete. Saved ${savedCount} rows.`);
       onSaveSuccess?.();
     } catch (err) {
       console.error('Failed to sync canvas edit to Firestore:', err);
     } finally {
       setIsSyncing(false);
     }
-  }, [data, isAdmin, isKeuangan, userBidang, onSaveSuccess]);
+  }, [data, canEditSpreadsheet, isRekap, conf, onSaveSuccess]);
 
-  // Expose saveData method to parent
   useImperativeHandle(ref, () => ({
     saveData: syncToFirestore,
   }));
 
-  const isAutoFixingRef = useRef(false);
-
-  // Handle cell edit change (Fallback)
   const onChange = useCallback(
     (workbookData: any[]) => {
+      if (isRekap) return;
       const sheet = workbookData?.[0];
       if (!sheet || !sheet.data) return;
       currentSheetDataRef.current = sheet.data;
-
-      // INSTANT VISUAL FIX HACK FOR EXCEL PASTE
-      // If we are not already auto-fixing, scan the No SPM column for stripped zeros
-      if (!isAutoFixingRef.current && workbookRef.current) {
-        isAutoFixingRef.current = true;
-        
-        sheet.data.forEach((rowCells: any, r: number) => {
-          if (!rowCells || r === 0) return; // Skip header
-          const cell = rowCells[2]; // No SPM is column index 2
-          if (cell) {
-            // Get raw value prioritizing 'm' (display text) over 'v' (raw value)
-            const rawVal = cell.m !== undefined && cell.m !== null ? String(cell.m).trim() :
-                           cell.v !== undefined && cell.v !== null ? String(cell.v).trim() : '';
-                           
-            // If it's purely numeric and needs padding (less than 4 digits)
-            if (/^\d+$/.test(rawVal) && rawVal.length > 0 && rawVal.length < 4) {
-              const padded = rawVal.padStart(4, '0');
-              try {
-                // Pass full cell object with text format to force FortuneSheet to render the leading zeros
-                workbookRef.current?.setCellValue?.(r, 2, {
-                  v: padded,
-                  m: padded,
-                  ct: { fa: '@', t: 's' }
-                });
-              } catch (e) {
-                // Ignore errors
-              }
-            } else if (cell.ct?.t !== 's' && rawVal) {
-              // Ensure even 4-digit numbers pasted get the text format so they don't break later
-              try {
-                workbookRef.current?.setCellValue?.(r, 2, {
-                  ...cell,
-                  ct: { fa: '@', t: 's' }
-                });
-              } catch (e) {}
-            }
-          }
-        });
-
-        // Release the lock after a tiny delay to prevent infinite onChange loops
-        setTimeout(() => {
-          isAutoFixingRef.current = false;
-        }, 150);
-      }
     },
-    []
+    [isRekap]
   );
 
   return (
     <div className="bg-white flex-1 w-full h-full flex flex-col relative overflow-hidden select-text">
-      {/* FortuneSheet Canvas Container - NATIVE COMPONENT WITHOUT HTML HEADER OVERLAYS */}
-      <div className="flex-1 w-full h-full relative font-sans">
+      {isRekap && (
+        <div className="absolute top-0 left-0 right-0 bg-yellow-50 text-yellow-800 text-xs font-medium px-4 py-1.5 text-center z-10 border-b border-yellow-200">
+          Mode Rekap: Tabel ini otomatis menggabungkan data dari SPP, SPM, dan SP2D berdasarkan Nama Penerima dan Keterangan. (Hanya Baca)
+        </div>
+      )}
+      <div className={`flex-1 w-full h-full relative font-sans ${isRekap ? 'mt-7' : ''}`}>
         <Workbook
           ref={workbookRef}
           data={sheets}

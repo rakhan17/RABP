@@ -1,0 +1,280 @@
+--- src/components/SpreadsheetGrid.tsx
++++ src/components/SpreadsheetGrid.tsx
+@@ -20,2 +20,3 @@
+ 
+-const CONFIG: Record<string, { collection: string, columns: any[] }> = {
++const CONFIG: Record<string, { collection: string, merges?: Record<string, any>, headerRows: number, headers: any[][], columns: any[] }> = {
+   spp: {
+@@ -23,12 +24,35 @@
++    headerRows: 2,
++    merges: {
++      "0_0": { r: 0, c: 0, rs: 2, cs: 1 },
++      "0_1": { r: 0, c: 1, rs: 2, cs: 1 },
++      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
++      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
++      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
++      "0_5": { r: 0, c: 5, rs: 2, cs: 1 },
++      "0_6": { r: 0, c: 6, rs: 1, cs: 3 },
++      "0_9": { r: 0, c: 9, rs: 2, cs: 1 },
++      "0_10": { r: 0, c: 10, rs: 2, cs: 1 },
++    },
++    headers: [
++      ['Tanggal SPP', 'Nomor SPP', 'Unit SKPD', 'Nama Penerima', 'Keterangan', 'Jenis SPP', 'Nilai (Rp)', null, null, 'Bidang', 'Sub kegiatan'],
++      [null, null, null, null, null, null, 'Bruto', 'Potongan', 'Neto', null, null]
++    ],
+     columns: [
+-      { key: 'tanggalSpp', title: 'Tanggal SPP', width: 140 },
+-      { key: 'nomorSpp', title: 'Nomor SPP', width: 180 },
+-      { key: 'unitSkpd', title: 'Unit SKPD', width: 150 },
+-      { key: 'namaPenerima', title: 'Nama Penerima', width: 220 },
+-      { key: 'keterangan', title: 'Keterangan', width: 300 },
+-      { key: 'jenisSpp', title: 'Jenis SPP', width: 140 },
+-      { key: 'nilaiBruto', title: 'Nilai Bruto (Rp)', width: 150, isCurrency: true },
+-      { key: 'nilaiPotongan', title: 'Potongan (Rp)', width: 150, isCurrency: true },
+-      { key: 'nilaiNeto', title: 'Neto (Rp)', width: 150, isCurrency: true },
+-      { key: 'bidang', title: 'Bidang', width: 150, isDropdown: true, dropType: 'bidang' },
+-      { key: 'subKegiatan', title: 'Sub Kegiatan', width: 150, isDropdown: true, dropType: 'subKegiatan' },
++      { key: 'tanggalSpp', width: 140 },
++      { key: 'nomorSpp', width: 180 },
++      { key: 'unitSkpd', width: 150 },
++      { key: 'namaPenerima', width: 220 },
++      { key: 'keterangan', width: 300 },
++      { key: 'jenisSpp', width: 140 },
++      { key: 'nilaiBruto', width: 150, isCurrency: true },
++      { key: 'nilaiPotongan', width: 150, isCurrency: true },
++      { key: 'nilaiNeto', width: 150, isCurrency: true },
++      { key: 'bidang', width: 150, isDropdown: true, dropType: 'bidang' },
++      { key: 'subKegiatan', width: 150, isDropdown: true, dropType: 'subKegiatan' },
+     ]
+@@ -37,10 +61,31 @@
+     collection: 'spm_data',
++    headerRows: 2,
++    merges: {
++      "0_0": { r: 0, c: 0, rs: 2, cs: 1 },
++      "0_1": { r: 0, c: 1, rs: 2, cs: 1 },
++      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
++      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
++      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
++      "0_5": { r: 0, c: 5, rs: 2, cs: 1 },
++      "0_6": { r: 0, c: 6, rs: 1, cs: 3 },
++    },
++    headers: [
++      ['Tanggal SPM', 'Nomor SPM', 'Unit SKPD', 'Nama Penerima', 'Keterangan', 'Jenis SPM', 'Nilai (Rp)', null, null],
++      [null, null, null, null, null, null, 'Bruto', 'Potongan', 'Neto']
++    ],
+     columns: [
+-      { key: 'tanggalSpm', title: 'Tanggal SPM', width: 140 },
+-      { key: 'nomorSpm', title: 'Nomor SPM', width: 180 },
+-      { key: 'unitSkpd', title: 'Unit SKPD', width: 150 },
+-      { key: 'namaPenerima', title: 'Nama Penerima', width: 220 },
+-      { key: 'keterangan', title: 'Keterangan', width: 300 },
+-      { key: 'jenisSpm', title: 'Jenis SPM', width: 140 },
+-      { key: 'nilaiBruto', title: 'Nilai Bruto (Rp)', width: 150, isCurrency: true },
+-      { key: 'nilaiPotongan', title: 'Potongan (Rp)', width: 150, isCurrency: true },
+-      { key: 'nilaiNeto', title: 'Neto (Rp)', width: 150, isCurrency: true },
++      { key: 'tanggalSpm', width: 140 },
++      { key: 'nomorSpm', width: 180 },
++      { key: 'unitSkpd', width: 150 },
++      { key: 'namaPenerima', width: 220 },
++      { key: 'keterangan', width: 300 },
++      { key: 'jenisSpm', width: 140 },
++      { key: 'nilaiBruto', width: 150, isCurrency: true },
++      { key: 'nilaiPotongan', width: 150, isCurrency: true },
++      { key: 'nilaiNeto', width: 150, isCurrency: true },
+     ]
+@@ -49,13 +94,36 @@
+     collection: 'sp2d_data',
++    headerRows: 2,
++    merges: {
++      "0_0": { r: 0, c: 0, rs: 1, cs: 2 },
++      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
++      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
++      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
++      "0_5": { r: 0, c: 5, rs: 2, cs: 1 },
++      "0_6": { r: 0, c: 6, rs: 2, cs: 1 },
++      "0_7": { r: 0, c: 7, rs: 1, cs: 3 },
++      "0_10": { r: 0, c: 10, rs: 2, cs: 1 },
++      "0_11": { r: 0, c: 11, rs: 2, cs: 1 },
++    },
++    headers: [
++      ['Tanggal SP2D', null, 'Nomor SP2D', 'Unit SKPD', 'Nama Penerima', 'Keterangan', 'Jenis SP2D', 'Pajak/Potongan', null, null, 'Kode Biling', 'Nomor NTPN'],
++      ['Pembuatan', 'Pencairan', null, null, null, null, null, 'Jenis', 'Nama', 'Jumlah', null, null]
++    ],
+     columns: [
+-      { key: 'tanggalSp2dPembuatan', title: 'Tanggal Pembuatan', width: 140 },
+-      { key: 'tanggalSp2dPencairan', title: 'Tanggal Pencairan', width: 140 },
+-      { key: 'nomorSp2d', title: 'Nomor SP2D', width: 180 },
+-      { key: 'unitSkpd', title: 'Unit SKPD', width: 150 },
+-      { key: 'namaPenerima', title: 'Nama Penerima', width: 220 },
+-      { key: 'keterangan', title: 'Keterangan', width: 300 },
+-      { key: 'jenisSp2d', title: 'Jenis SP2D', width: 140 },
+-      { key: 'pajakJenis', title: 'Pajak Jenis', width: 140 },
+-      { key: 'pajakNama', title: 'Pajak Nama', width: 160 },
+-      { key: 'pajakJumlah', title: 'Pajak Jumlah', width: 150, isCurrency: true },
+-      { key: 'kodeBiling', title: 'Kode Biling', width: 160 },
+-      { key: 'nomorNtpn', title: 'Nomor NTPN', width: 160 },
++      { key: 'tanggalSp2dPembuatan', width: 140 },
++      { key: 'tanggalSp2dPencairan', width: 140 },
++      { key: 'nomorSp2d', width: 180 },
++      { key: 'unitSkpd', width: 150 },
++      { key: 'namaPenerima', width: 220 },
++      { key: 'keterangan', width: 300 },
++      { key: 'jenisSp2d', width: 140 },
++      { key: 'pajakJenis', width: 140 },
++      { key: 'pajakNama', width: 160 },
++      { key: 'pajakJumlah', width: 150, isCurrency: true },
++      { key: 'kodeBiling', width: 160 },
++      { key: 'nomorNtpn', width: 160 },
+     ]
+@@ -64,16 +132,54 @@
+     collection: 'read_only',
++    headerRows: 2,
++    merges: {
++      "0_0": { r: 0, c: 0, rs: 2, cs: 1 },
++      "0_1": { r: 0, c: 1, rs: 2, cs: 1 },
++      "0_2": { r: 0, c: 2, rs: 2, cs: 1 },
++      "0_3": { r: 0, c: 3, rs: 2, cs: 1 },
++      "0_4": { r: 0, c: 4, rs: 2, cs: 1 },
++      "0_5": { r: 0, c: 5, rs: 1, cs: 2 },
++      "0_7": { r: 0, c: 7, rs: 2, cs: 1 },
++      "0_8": { r: 0, c: 8, rs: 2, cs: 1 },
++      "0_9": { r: 0, c: 9, rs: 2, cs: 1 },
++      "0_10": { r: 0, c: 10, rs: 1, cs: 3 },
++      "0_13": { r: 0, c: 13, rs: 1, cs: 3 },
++      "0_16": { r: 0, c: 16, rs: 2, cs: 1 },
++      "0_17": { r: 0, c: 17, rs: 2, cs: 1 },
++      "0_18": { r: 0, c: 18, rs: 2, cs: 1 },
++      "0_19": { r: 0, c: 19, rs: 2, cs: 1 },
++      "0_20": { r: 0, c: 20, rs: 2, cs: 1 },
++    },
++    headers: [
++      ['No.', 'Tanggal SPP', 'Nomor SPP', 'Tanggal SPM', 'Nomor SPM', 'Tanggal SP2D', null, 'Nomor SP2D', 'Unit SKPD', 'Nama Penerima', 'Nilai (Rp)', null, null, 'Pajak/Potongan', null, null, 'Kode Biling', 'Nomor NTPN', 'Keterangan', 'Bidang', 'Sub kegiatan'],
++      [null, null, null, null, null, 'Pembuatan', 'Pencairan', null, null, null, 'Bruto', 'Potongan', 'Neto', 'Jenis', 'Nama', 'Jumlah', null, null, null, null, null]
++    ],
+     columns: [
+-      { key: 'keterangan', title: 'Keterangan', width: 300 },
+-      { key: 'namaPenerima', title: 'Nama Penerima', width: 220 },
+-      { key: 'tanggalSpp', title: 'Tgl SPP', width: 120 },
+-      { key: 'nomorSpp', title: 'No SPP', width: 160 },
+-      { key: 'tanggalSpm', title: 'Tgl SPM', width: 120 },
+-      { key: 'nomorSpm', title: 'No SPM', width: 160 },
+-      { key: 'nomorSp2d', title: 'No SP2D', width: 160 },
+-      { key: 'tanggalSp2dPencairan', title: 'Tgl Cair', width: 120 },
+-      { key: 'nilaiBruto', title: 'Nilai Bruto', width: 150, isCurrency: true },
+-      { key: 'nilaiPotongan', title: 'Potongan', width: 150, isCurrency: true },
+-      { key: 'nilaiNeto', title: 'Neto', width: 150, isCurrency: true },
+-      { key: 'kodeBiling', title: 'Kode Biling', width: 140 },
+-      { key: 'nomorNtpn', title: 'NTPN', width: 140 },
+-      { key: 'bidang', title: 'Bidang', width: 140 },
+-      { key: 'subKegiatan', title: 'Sub Kegiatan', width: 140 },
++      { key: 'noIndex', width: 60 },
++      { key: 'tanggalSpp', width: 140 },
++      { key: 'nomorSpp', width: 160 },
++      { key: 'tanggalSpm', width: 140 },
++      { key: 'nomorSpm', width: 160 },
++      { key: 'tanggalSp2dPembuatan', width: 140 },
++      { key: 'tanggalSp2dPencairan', width: 140 },
++      { key: 'nomorSp2d', width: 160 },
++      { key: 'unitSkpd', width: 150 },
++      { key: 'namaPenerima', width: 220 },
++      { key: 'nilaiBruto', width: 150, isCurrency: true },
++      { key: 'nilaiPotongan', width: 150, isCurrency: true },
++      { key: 'nilaiNeto', width: 150, isCurrency: true },
++      { key: 'pajakJenis', width: 140 },
++      { key: 'pajakNama', width: 160 },
++      { key: 'pajakJumlah', width: 150, isCurrency: true },
++      { key: 'kodeBiling', width: 140 },
++      { key: 'nomorNtpn', width: 140 },
++      { key: 'keterangan', width: 300 },
++      { key: 'bidang', width: 140 },
++      { key: 'subKegiatan', width: 140 },
+     ]
+@@ -118,22 +224,24 @@
+ 
+-    heights[0] = 36;
+-    conf.columns.forEach((col, cIdx) => {
+-      cWidths[cIdx] = col.width;
+-      cells.push({
+-        r: 0,
+-        c: cIdx,
+-        v: {
+-          v: col.title,
+-          m: col.title,
+-          bg: '#f1f3f4',
+-          fc: '#444746',
+-          bl: 1,
+-          vt: 1,
+-          ht: 1,
+-          ct: { fa: '@', t: 's' }
+-        },
++    for (let r = 0; r < conf.headerRows; r++) {
++      heights[r] = 36;
++      conf.headers[r].forEach((title, cIdx) => {
++        if (r === 0) cWidths[cIdx] = conf.columns[cIdx].width;
++        if (title !== null) {
++          cells.push({
++            r,
++            c: cIdx,
++            v: {
++              v: title,
++              m: title,
++              bg: '#f1f3f4',
++              fc: '#444746',
++              bl: 1,
++              vt: 1,
++              ht: 1,
++              ct: { fa: '@', t: 's' }
++            },
++          });
++        }
+       });
+-    });
++    }
+ 
+@@ -141,4 +249,5 @@
+       const r = rIdx + 1;
++      const dataRow = isRekap ? rIdx + conf.headerRows : rIdx + conf.headerRows;
+-      heights[r] = 36;
++      heights[dataRow] = 36;
+       conf.columns.forEach((col, cIdx) => {
+-        const val = row[col.key];
++        const val = col.key === 'noIndex' ? rIdx + 1 : row[col.key];
+         const strVal = val !== undefined && val !== null ? String(val) : '';
+         
+         cells.push({
+-          r,
++          r: dataRow,
+           c: cIdx,
+@@ -165,7 +274,7 @@
+       for (let r = data.length + 1; r < maxEmptyRows; r++) {
++        const dataRow = r - 1 + conf.headerRows;
+         for (let c = 0; c < conf.columns.length; c++) {
+           const isKwitan = conf.columns[c].isCurrency;
+           cells.push({
+-            r,
++            r: dataRow,
+             c,
+@@ -218,6 +327,7 @@
+         config: {
+           rowlen: rowHeights,
+           columnlen: columnWidths,
++          merge: conf.merges || {},
+         },
+         celldata,
+@@ -239,7 +349,7 @@
+       let savedCount = 0;
+-      for (let r = 1; r < gridData.length; r++) {
++      for (let r = conf.headerRows; r < gridData.length; r++) {
+         const rowCells = gridData[r];
+         if (!rowCells) continue;
+ 
+@@ -274,7 +384,7 @@
+ 
+-        const existingRow = data[r - 1];
++        const existingRow = data[r - conf.headerRows];
+ 
+@@ -312,3 +422,3 @@
+       )}
+-      <div className={`flex-1 w-full h-full relative font-sans ${isRekap ? 'mt-7 pointer-events-none' : ''}`}>
++      <div className={`flex-1 w-full h-full relative font-sans ${isRekap ? 'mt-7' : ''}`}>
+         <Workbook

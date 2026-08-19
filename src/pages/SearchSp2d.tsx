@@ -1,38 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
-import type { Sp2dRegistration } from '../types';
+import type { MergedRekapData } from '../types';
 import { Search, X, CheckCircle2 } from 'lucide-react';
 
 export default function SearchSp2d() {
-  const { data, loading, isKeuangan, userBidang } = useData();
+  const { mergedRekapData, loading, isKeuangan, userBidang } = useData();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredData, setFilteredData] = useState<Sp2dRegistration[]>([]);
-  const [selectedItem, setSelectedItem] = useState<Sp2dRegistration | null>(null);
+  const [filteredData, setFilteredData] = useState<MergedRekapData[]>([]);
+  const [selectedItem, setSelectedItem] = useState<MergedRekapData | null>(null);
 
   // Live search effect
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setFilteredData(data);
+      setFilteredData(mergedRekapData);
       return;
     }
 
     const query = searchQuery.toLowerCase().trim();
-    const results = data.filter((item) => {
+    const results = mergedRekapData.filter((item) => {
       return (
-        (item.noSp2d && String(item.noSp2d).toLowerCase().includes(query)) ||
-        (item.noSpm && String(item.noSpm).toLowerCase().includes(query)) ||
-        (item.namaRekanan && String(item.namaRekanan).toLowerCase().includes(query)) ||
+        (item.nomorSp2d && String(item.nomorSp2d).toLowerCase().includes(query)) ||
+        (item.nomorSpm && String(item.nomorSpm).toLowerCase().includes(query)) ||
+        (item.namaPenerima && String(item.namaPenerima).toLowerCase().includes(query)) ||
         (item.bidang && String(item.bidang).toLowerCase().includes(query)) ||
-        (item.kodeSubKegiatan && String(item.kodeSubKegiatan).toLowerCase().includes(query)) ||
-        (item.pekerjaan && String(item.pekerjaan).toLowerCase().includes(query)) ||
-        (item.tglAntarBerkas && String(item.tglAntarBerkas).toLowerCase().includes(query)) ||
-        (item.tglCairSp2d && String(item.tglCairSp2d).toLowerCase().includes(query)) ||
-        (item.nilaiKwitansi && String(item.nilaiKwitansi).includes(query))
+        (item.subKegiatan && String(item.subKegiatan).toLowerCase().includes(query)) ||
+        (item.keterangan && String(item.keterangan).toLowerCase().includes(query)) ||
+        (item.tanggalSpm && String(item.tanggalSpm).toLowerCase().includes(query)) ||
+        (item.tanggalSp2dPencairan && String(item.tanggalSp2dPencairan).toLowerCase().includes(query)) ||
+        (item.nilaiBruto && String(item.nilaiBruto).includes(query))
       );
     });
 
     setFilteredData(results);
-  }, [searchQuery, data]);
+  }, [searchQuery, mergedRekapData]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
@@ -104,19 +104,19 @@ export default function SearchSp2d() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/80">
-                {filteredData.map((item) => {
-                  const bulanCalc = item.tglAntarBerkas ? new Date(item.tglAntarBerkas).toLocaleDateString('id-ID', { month: 'long' }) : '-';
+                {filteredData.map((item, idx) => {
+                  const bulanCalc = item.tanggalSpm ? new Date(item.tanggalSpm).toLocaleDateString('id-ID', { month: 'long' }) : '-';
                   return (
-                  <tr key={item.id} className="hover:bg-[#f8f9fa] transition-colors group">
+                  <tr key={item.id || idx} className="hover:bg-[#f8f9fa] transition-colors group">
                     <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{bulanCalc}</td>
-                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0b57d0] whitespace-nowrap">{item.noSpm || '-'}</td>
-                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] max-w-[200px] truncate">{item.namaRekanan || '-'}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-right font-semibold text-[#444746] whitespace-nowrap">{formatCurrency(item.nilaiKwitansi)}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0b57d0] whitespace-nowrap">{item.nomorSpm || '-'}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] max-w-[200px] truncate">{item.namaPenerima || '-'}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-right font-semibold text-[#444746] whitespace-nowrap">{formatCurrency(item.nilaiBruto)}</td>
                     <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{item.bidang || '-'}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{item.kodeSubKegiatan || '-'}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-[#444746] max-w-[250px] truncate">{item.pekerjaan || '-'}</td>
-                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] whitespace-nowrap">{item.noSp2d || '-'}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{item.tglCairSp2d || '-'}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{item.subKegiatan || '-'}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-[#444746] max-w-[250px] truncate">{item.keterangan || '-'}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] whitespace-nowrap">{item.nomorSp2d || '-'}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{item.tanggalSp2dPencairan || '-'}</td>
                     <td className="px-5 py-3.5 text-center">
                       <button 
                         onClick={() => setSelectedItem(item)} 
@@ -154,24 +154,24 @@ export default function SearchSp2d() {
                 <div>
                   <dt className="text-[12px] font-medium text-[#444746] mb-1">Bulan</dt>
                   <dd className="text-[15px] font-medium text-[#1f1f1f]">
-                    {selectedItem.tglAntarBerkas ? new Date(selectedItem.tglAntarBerkas).toLocaleDateString('id-ID', { month: 'long' }) : '-'}
+                    {selectedItem.tanggalSpm ? new Date(selectedItem.tanggalSpm).toLocaleDateString('id-ID', { month: 'long' }) : '-'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[12px] font-medium text-[#444746] mb-1">No SPM</dt>
-                  <dd className="text-[15px] font-medium text-[#0b57d0]">{selectedItem.noSpm || '-'}</dd>
+                  <dd className="text-[15px] font-medium text-[#0b57d0]">{selectedItem.nomorSpm || '-'}</dd>
                 </div>
               </div>
 
               <div>
                 <dt className="text-[12px] font-medium text-[#444746] mb-1">Nama Rekanan</dt>
-                <dd className="text-[16px] font-medium text-[#1f1f1f]">{selectedItem.namaRekanan || '-'}</dd>
+                <dd className="text-[16px] font-medium text-[#1f1f1f]">{selectedItem.namaPenerima || '-'}</dd>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <dt className="text-[12px] font-medium text-[#444746] mb-1">Nilai Kwitansi</dt>
-                  <dd className="text-[16px] font-semibold text-[#444746]">{formatCurrency(selectedItem.nilaiKwitansi)}</dd>
+                  <dt className="text-[12px] font-medium text-[#444746] mb-1">Nilai Kwitansi (Bruto)</dt>
+                  <dd className="text-[16px] font-semibold text-[#444746]">{formatCurrency(selectedItem.nilaiBruto)}</dd>
                 </div>
                 <div>
                   <dt className="text-[12px] font-medium text-[#444746] mb-1">Bidang</dt>
@@ -180,15 +180,15 @@ export default function SearchSp2d() {
               </div>
 
               <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-gray-100">
-                <dt className="text-[12px] font-medium text-[#444746] mb-1">No SP2D & Tanggal</dt>
+                <dt className="text-[12px] font-medium text-[#444746] mb-1">No SP2D & Tanggal Pencairan</dt>
                 <dd className="text-[15px] font-medium text-[#1f1f1f] break-all">
-                  {selectedItem.noSp2d || '-'} <span className="text-gray-400 mx-2">•</span> {selectedItem.tglCairSp2d || '-'}
+                  {selectedItem.nomorSp2d || '-'} <span className="text-gray-400 mx-2">•</span> {selectedItem.tanggalSp2dPencairan || '-'}
                 </dd>
               </div>
 
               <div>
                 <dt className="text-[12px] font-medium text-[#444746] mb-1">Pekerjaan / Keterangan</dt>
-                <dd className="text-[14px] text-[#1f1f1f] leading-relaxed">{selectedItem.pekerjaan || '-'}</dd>
+                <dd className="text-[14px] text-[#1f1f1f] leading-relaxed">{selectedItem.keterangan || '-'}</dd>
               </div>
             </div>
             

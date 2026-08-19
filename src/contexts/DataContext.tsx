@@ -1,11 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
-import { subscribeToRegistrations, getRegistrationsFromFirestore } from '../lib/firestoreService';
-import type { Sp2dRegistration } from '../types';
+import { subscribeToCollection, getFromFirestore } from '../lib/firestoreService';
+import type { SppData, SpmData, Sp2dData, MergedRekapData } from '../types';
 
 interface DataContextType {
-  data: Sp2dRegistration[]; // Filtered dataset based on user's bidang scoping
-  allData: Sp2dRegistration[]; // Full unfiltered dataset (for Keuangan / admin)
+  sppData: SppData[];
+  spmData: SpmData[];
+  sp2dData: Sp2dData[];
+  mergedRekapData: MergedRekapData[];
+  
+  allSppData: SppData[];
+  allSpmData: SpmData[];
+  allSp2dData: Sp2dData[];
+  
   loading: boolean;
   errorMsg: string;
   refreshData: () => Promise<void>;
@@ -17,60 +24,144 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [allData, setAllData] = useState<Sp2dRegistration[]>([]);
+  const [allSppData, setAllSppData] = useState<SppData[]>([]);
+  const [allSpmData, setAllSpmData] = useState<SpmData[]>([]);
+  const [allSp2dData, setAllSp2dData] = useState<Sp2dData[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   const isKeuangan = user?.username?.toLowerCase() === 'keuangan' || user?.bidang?.toLowerCase() === 'keuangan';
   const userBidang = user?.bidang || '';
 
-  // 1. Filter dataset synchronously based on Bidang scoping
-  const data = React.useMemo(() => {
-    if (!allData || allData.length === 0) {
-      return [];
-    }
-    if (isKeuangan || !userBidang) {
-      // Keuangan account sees all data
-      return allData;
-    } else {
-      // Other accounts only see data matching their assigned Bidang
-      const userBidangNormalized = userBidang.toLowerCase().trim();
-      return allData.filter((item) => {
-        if (!item.bidang) return false;
-        return item.bidang.toLowerCase().trim() === userBidangNormalized;
-      });
-    }
-  }, [allData, isKeuangan, userBidang]);
+  // Filter dataset synchronously based on Bidang scoping
+  const sppData = useMemo(() => {
+    if (isKeuangan || !userBidang) return allSppData;
+    const ub = userBidang.toLowerCase().trim();
+    return allSppData.filter((item) => item.unitSkpd?.toLowerCase().trim() === ub || item.bidang?.toLowerCase().trim() === ub);
+  }, [allSppData, isKeuangan, userBidang]);
 
-  // 2. Real-time Subscription to Firebase Firestore
+  const spmData = useMemo(() => {
+    if (isKeuangan || !userBidang) return allSpmData;
+    const ub = userBidang.toLowerCase().trim();
+    return allSpmData.filter((item) => item.unitSkpd?.toLowerCase().trim() === ub);
+  }, [allSpmData, isKeuangan, userBidang]);
+
+  const sp2dData = useMemo(() => {
+    if (isKeuangan || !userBidang) return allSp2dData;
+    const ub = userBidang.toLowerCase().trim();
+    return allSp2dData.filter((item) => item.unitSkpd?.toLowerCase().trim() === ub);
+  }, [allSp2dData, isKeuangan, userBidang]);
+
+  // Merge Data for Rekap Data
+  const mergedRekapData = useMemo(() => {
+    const map = new Map<string, Partial<MergedRekapData>>();
+    
+    const getKey = (ket: string, nama: string) => `${(ket||'').trim().toLowerCase()}_${(nama||'').trim().toLowerCase()}`;
+    
+    // Add SPP
+    sppData.forEach(spp => {
+      const key = getKey(spp.keterangan, spp.namaPenerima);
+      map.set(key, {
+        id: spp.id, // primary id
+        keterangan: spp.keterangan,
+        namaPenerima: spp.namaPenerima,
+        tanggalSpp: spp.tanggalSpp,
+        nomorSpp: spp.nomorSpp,
+        sppUnitSkpd: spp.unitSkpd,
+        jenisSpp: spp.jenisSpp,
+        bidang: spp.bidang,
+        subKegiatan: spp.subKegiatan,
+        nilaiBruto: spp.nilaiBruto,
+        nilaiPotongan: spp.nilaiPotongan,
+        nilaiNeto: spp.nilaiNeto,
+      });
+    });
+
+    // Merge SPM
+    spmData.forEach(spm => {
+      const key = getKey(spm.keterangan, spm.namaPenerima);
+      const existing = map.get(key) || {
+        id: spm.id,
+        keterangan: spm.keterangan,
+        namaPenerima: spm.namaPenerima,
+        nilaiBruto: spm.nilaiBruto,
+        nilaiPotongan: spm.nilaiPotongan,
+        nilaiNeto: spm.nilaiNeto,
+      };
+      existing.tanggalSpm = spm.tanggalSpm;
+      existing.nomorSpm = spm.nomorSpm;
+      existing.spmUnitSkpd = spm.unitSkpd;
+      existing.jenisSpm = spm.jenisSpm;
+      map.set(key, existing);
+    });
+
+    // Merge SP2D
+    sp2dData.forEach(sp2d => {
+      const key = getKey(sp2d.keterangan, sp2d.namaPenerima);
+      const existing = map.get(key) || {
+        id: sp2d.id,
+        keterangan: sp2d.keterangan,
+        namaPenerima: sp2d.namaPenerima,
+      };
+      existing.tanggalSp2dPembuatan = sp2d.tanggalSp2dPembuatan;
+      existing.tanggalSp2dPencairan = sp2d.tanggalSp2dPencairan;
+      existing.nomorSp2d = sp2d.nomorSp2d;
+      existing.sp2dUnitSkpd = sp2d.unitSkpd;
+      existing.jenisSp2d = sp2d.jenisSp2d;
+      existing.pajakJenis = sp2d.pajakJenis;
+      existing.pajakNama = sp2d.pajakNama;
+      existing.pajakJumlah = sp2d.pajakJumlah;
+      existing.kodeBiling = sp2d.kodeBiling;
+      existing.nomorNtpn = sp2d.nomorNtpn;
+      map.set(key, existing);
+    });
+
+    return Array.from(map.values()) as MergedRekapData[];
+  }, [sppData, spmData, sp2dData]);
+
   useEffect(() => {
     setLoading(true);
-    setErrorMsg('');
+    let loadedCount = 0;
+    const checkLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 3) setLoading(false);
+    };
 
-    const unsubscribe = subscribeToRegistrations(
-      (items) => {
-        setAllData(items);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Firestore subscription error:", error);
-        refreshData();
-      }
-    );
+    const unsubSpp = subscribeToCollection<SppData>('spp_data', (data) => {
+      setAllSppData(data);
+      checkLoaded();
+    }, (err) => console.error(err));
 
-    return () => unsubscribe();
+    const unsubSpm = subscribeToCollection<SpmData>('spm_data', (data) => {
+      setAllSpmData(data);
+      checkLoaded();
+    }, (err) => console.error(err));
+
+    const unsubSp2d = subscribeToCollection<Sp2dData>('sp2d_data', (data) => {
+      setAllSp2dData(data);
+      checkLoaded();
+    }, (err) => console.error(err));
+
+    return () => {
+      unsubSpp();
+      unsubSpm();
+      unsubSp2d();
+    };
   }, []);
 
-  // One-time fetch from Firestore
   const refreshData = async () => {
     setLoading(true);
     setErrorMsg('');
     try {
-      const items = await getRegistrationsFromFirestore();
-      setAllData(items);
-      if (items.length === 0) {
-        setErrorMsg('Data kosong (0 rows). Klik Tambah Data untuk mengisi.');
-      }
+      const [spp, spm, sp2d] = await Promise.all([
+        getFromFirestore<SppData>('spp_data'),
+        getFromFirestore<SpmData>('spm_data'),
+        getFromFirestore<Sp2dData>('sp2d_data')
+      ]);
+      setAllSppData(spp);
+      setAllSpmData(spm);
+      setAllSp2dData(sp2d);
     } catch (error: any) {
       console.error("Error refreshing data:", error);
       setErrorMsg(error?.message || String(error));
@@ -82,13 +173,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return (
     <DataContext.Provider
       value={{
-        data,
-        allData,
-        loading,
-        errorMsg,
-        refreshData,
-        isKeuangan,
-        userBidang,
+        sppData, spmData, sp2dData, mergedRekapData,
+        allSppData, allSpmData, allSp2dData,
+        loading, errorMsg, refreshData, isKeuangan, userBidang,
       }}
     >
       {children}

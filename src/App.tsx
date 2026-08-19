@@ -7,7 +7,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SearchSp2d from './pages/SearchSp2d';
 import Recap from './pages/Recap';
-import FormSp2d from './pages/FormSp2d';
 import MobileBlocker from './components/MobileBlocker';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -30,9 +29,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="add" element={<FormSp2d />} />
-              <Route path="edit/:id" element={<FormSp2d />} />
+              <Route index element={<Navigate to="/input/spp" replace />} />
+              <Route path="input/:type" element={<Dashboard />} />
               <Route path="search" element={<SearchSp2d />} />
               <Route path="recap/:type" element={<Recap />} />
               <Route path="recap" element={<Navigate to="/recap/antar-berkas" replace />} />

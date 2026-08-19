@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Search, FileText, LogOut, ChevronRight, UserCircle } from 'lucide-react';
+import { Search, FileText, LogOut, ChevronRight, UserCircle, Edit3 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const [inputOpen, setInputOpen] = useState(true);
   const [recapOpen, setRecapOpen] = useState(true);
 
   // Material 3 Navigation Item (Pill shaped)
@@ -44,10 +45,34 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto flex flex-col space-y-0 custom-scrollbar">
-        <NavLink to="/" className={navItemClass} end>
-          <Home className="w-[22px] h-[22px] mr-4 shrink-0" strokeWidth={2} />
-          <span>Input Data</span>
-        </NavLink>
+        
+        <div className="mt-1">
+          <button
+            onClick={() => setInputOpen(!inputOpen)}
+            className="w-[calc(100%-24px)] mx-3 my-1 flex items-center justify-between px-4 py-3 text-sm font-medium text-[#444746] hover:bg-[#e8eaed] rounded-full transition-all duration-200 ripple-dark"
+          >
+            <div className="flex items-center">
+              <Edit3 className="w-[22px] h-[22px] mr-4 shrink-0" strokeWidth={2} />
+              <span>Input Data</span>
+            </div>
+            <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${inputOpen ? 'rotate-90' : ''}`} />
+          </button>
+          
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${inputOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <NavLink to="/input/spp" className={subNavItemClass}>
+              Input SPP
+            </NavLink>
+            <NavLink to="/input/spm" className={subNavItemClass}>
+              Input SPM
+            </NavLink>
+            <NavLink to="/input/sp2d" className={subNavItemClass}>
+              Input SP2D
+            </NavLink>
+            <NavLink to="/input/rekap" className={subNavItemClass}>
+              Rekap Data Terpadu
+            </NavLink>
+          </div>
+        </div>
 
         <NavLink to="/search" className={navItemClass}>
           <Search className="w-[22px] h-[22px] mr-4 shrink-0" strokeWidth={2} />

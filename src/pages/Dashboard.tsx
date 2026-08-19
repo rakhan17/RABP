@@ -3,9 +3,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import SpreadsheetGrid, { type SpreadsheetGridRef } from '../components/SpreadsheetGrid';
 import { ShieldCheck, Lock, RefreshCw, Save, CheckCircle2 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { data, loading, isKeuangan, userBidang } = useData();
+  const { type } = useParams<{ type: string }>();
+  const inputType = type || 'spp';
+
+  // We need to fetch from DataContext appropriately based on inputType, but actually DataContext provides all 3 arrays.
+  const { sppData, spmData, sp2dData, mergedRekapData, loading, isKeuangan, userBidang } = useData();
+  
+  let currentData: any[] = [];
+  if (inputType === 'spp') currentData = sppData;
+  else if (inputType === 'spm') currentData = spmData;
+  else if (inputType === 'sp2d') currentData = sp2dData;
+  else if (inputType === 'rekap') currentData = mergedRekapData;
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
@@ -108,7 +119,7 @@ export default function Dashboard() {
 
       {/* Main Full-Screen Canvas Spreadsheet Area */}
       <div className="flex-1 w-full h-[calc(100%-64px)] relative overflow-hidden flex flex-col print:hidden bg-white">
-        {loading && data.length === 0 ? (
+        {loading && currentData.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-4 flex-1 bg-white">
             <div className="w-64 h-1 bg-[#f1f3f4] rounded-full overflow-hidden">
               <div
@@ -127,8 +138,10 @@ export default function Dashboard() {
           </div>
         ) : (
           <SpreadsheetGrid
+            key={inputType}
             ref={gridRef}
-            data={data}
+            data={currentData}
+            inputType={inputType as 'spp' | 'spm' | 'sp2d' | 'rekap'}
             isAdmin={isAdmin}
             userBidang={userBidang}
             isKeuangan={isKeuangan}
