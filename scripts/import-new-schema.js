@@ -44,7 +44,7 @@ function parseDateStr(str) {
 function parseNum(val) {
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
   if (!val) return 0;
-  const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+  const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
   return isNaN(num) ? 0 : num;
 }
 
@@ -56,9 +56,8 @@ async function run() {
 
   const wb = xlsx.readFile('/Applications/Mind/RABP/updatedata/updatedata2/Data Rakhan.xlsx');
   
-  // SPP
   let sheet = wb.Sheets['SPP'];
-  let rawData = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+  let rawData = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
   let items = [];
   // Row 0,1 are headers. Data starts at row 2
   for(let i = 2; i < rawData.length; i++) {
@@ -97,7 +96,7 @@ async function run() {
 
   // SPM
   sheet = wb.Sheets['SPM'];
-  rawData = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+  rawData = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
   items = [];
   for(let i = 2; i < rawData.length; i++) {
     const row = rawData[i];
@@ -131,8 +130,8 @@ async function run() {
   console.log(`Inserted ${count} SPM records.`);
 
   // SP2D
-  sheet = wb.Sheets['sp2d'];
-  rawData = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+  sheet = wb.Sheets['sp2d pajak '] || wb.Sheets['sp2d pajak'];
+  rawData = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
   items = [];
   for(let i = 2; i < rawData.length; i++) {
     const row = rawData[i];
@@ -146,11 +145,11 @@ async function run() {
       namaPenerima: String(row[5] || ''),
       keterangan: String(row[6] || ''),
       jenisSp2d: String(row[7] || ''),
-      pajakJenis: '',
-      pajakNama: '',
-      pajakJumlah: 0,
-      kodeBiling: '',
-      nomorNtpn: '',
+      pajakJenis: String(row[8] || ''),
+      pajakNama: String(row[9] || ''),
+      pajakJumlah: parseNum(row[10]),
+      kodeBiling: String(row[11] || ''),
+      nomorNtpn: String(row[12] || ''),
       createdAt: new Date().toISOString()
     });
   }

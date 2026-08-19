@@ -22,6 +22,7 @@ export default function Recap() {
 
   const { mergedRekapData, loading, isKeuangan, userBidang } = useData();
   const [filteredData, setFilteredData] = useState<MergedRekapData[]>([]);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   // Filters
   const [bidang, setBidang] = useState(isKeuangan ? '' : userBidang);
@@ -75,6 +76,24 @@ export default function Recap() {
 
     setFilteredData(result);
   }, [bidang, tglMulai, tglSelesai, bulan, kodeSubKegiatan, filterNoSpm, mergedRekapData, recapType]);
+
+  const toggleRowSelection = (id: string) => {
+    const newSet = new Set(selectedRows);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedRows(newSet);
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedRows.size === filteredData.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(filteredData.map(d => d.id || d.nomorSpm || Math.random().toString())));
+    }
+  };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
@@ -209,18 +228,18 @@ export default function Recap() {
             {recapType === 'antar_berkas' && (
               <div>
                 <label className="block text-[13px] font-medium text-[#444746] mb-1.5">No. SPM</label>
-                <select
+                <input
+                  list="spm-list"
+                  placeholder="-- Ketik / Cari No SPM --"
                   value={filterNoSpm}
                   onChange={(e) => setFilterNoSpm(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
-                >
-                  <option value="">-- Semua No SPM --</option>
+                />
+                <datalist id="spm-list">
                   {uniqueNoSpm.map((spm) => (
-                    <option key={spm} value={spm}>
-                      {spm}
-                    </option>
+                    <option key={spm} value={spm} />
                   ))}
-                </select>
+                </datalist>
               </div>
             )}
 
@@ -336,6 +355,9 @@ export default function Recap() {
             <table className="min-w-full text-left border-collapse print:border print:border-black">
               <thead className="bg-white text-[12px] font-semibold text-[#444746] border-b border-gray-200 print:static print:border-b-black print:text-black">
                 <tr>
+                  <th className="px-5 py-4 font-medium text-center w-12 print:hidden">
+                    <input type="checkbox" onChange={toggleAllSelection} checked={filteredData.length > 0 && selectedRows.size === filteredData.length} />
+                  </th>
                   <th className="px-5 py-4 font-medium text-center w-12">No</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Tgl Antar / SPM</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Bulan</th>
@@ -355,8 +377,17 @@ export default function Recap() {
                 ) : (
                   filteredData.map((row, idx) => {
                     const bulanCalc = getBulanName(row.tanggalSpm);
+                    const rowId = row.id || row.nomorSpm || idx.toString();
+                    const isSelected = selectedRows.has(rowId);
+                    
+                    // In print mode, if any row is selected, hide unselected rows.
+                    const printHiddenClass = selectedRows.size > 0 && !isSelected ? 'print:hidden' : '';
+
                     return (
-                    <tr key={row.id || idx} className="hover:bg-[#f8f9fa] transition-colors print:break-inside-avoid">
+                    <tr key={rowId} className={`hover:bg-[#f8f9fa] transition-colors print:break-inside-avoid ${printHiddenClass}`}>
+                      <td className="px-5 py-3.5 text-center text-[#444746] text-[13px] print:hidden">
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleRowSelection(rowId)} />
+                      </td>
                       <td className="px-5 py-3.5 text-center text-[#444746] text-[13px]">{idx + 1}</td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-[13px] text-[#444746]">{row.tanggalSpm || '-'}</td>
                       <td className="px-5 py-3.5 text-[13px] text-[#444746]">{bulanCalc}</td>
@@ -372,6 +403,7 @@ export default function Recap() {
               {filteredData.length > 0 && (
                 <tfoot className="bg-white border-t border-gray-200">
                   <tr>
+                    <td className="px-5 py-4 print:hidden"></td>
                     <td colSpan={5} className="px-5 py-4 text-right text-[13px] font-medium text-[#444746]">
                       Total Kwitansi:
                     </td>

@@ -69,6 +69,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         tanggalSpp: spp.tanggalSpp,
         nomorSpp: spp.nomorSpp,
         sppUnitSkpd: spp.unitSkpd,
+        unitSkpd: spp.unitSkpd,
         jenisSpp: spp.jenisSpp,
         bidang: spp.bidang,
         subKegiatan: spp.subKegiatan,
@@ -92,6 +93,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       existing.tanggalSpm = spm.tanggalSpm;
       existing.nomorSpm = spm.nomorSpm;
       existing.spmUnitSkpd = spm.unitSkpd;
+      existing.unitSkpd = existing.unitSkpd || spm.unitSkpd;
       existing.jenisSpm = spm.jenisSpm;
       map.set(key, existing);
     });
@@ -108,6 +110,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       existing.tanggalSp2dPencairan = sp2d.tanggalSp2dPencairan;
       existing.nomorSp2d = sp2d.nomorSp2d;
       existing.sp2dUnitSkpd = sp2d.unitSkpd;
+      existing.unitSkpd = existing.unitSkpd || sp2d.unitSkpd;
       existing.jenisSp2d = sp2d.jenisSp2d;
       existing.pajakJenis = sp2d.pajakJenis;
       existing.pajakNama = sp2d.pajakNama;

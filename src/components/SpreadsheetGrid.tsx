@@ -235,7 +235,9 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
       heights[dataRow] = 36;
       conf.columns.forEach((col, cIdx) => {
         const val = col.key === 'noIndex' ? rIdx + 1 : row[col.key];
-        const strVal = val !== undefined && val !== null ? String(val) : '';
+        const rawStr = val !== undefined && val !== null ? String(val) : '';
+        // Inject zero-width space (\u200B) for non-currency strings to completely prevent FortuneSheet from parsing it as a number
+        const strVal = (!col.isCurrency && rawStr.length > 0) ? '\u200B' + rawStr : rawStr;
         
         cells.push({
           r: dataRow,
@@ -339,9 +341,10 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         const getCellVal = (c: number): string => {
           const cell = rowCells[c];
           if (!cell) return '';
-          if (cell.m !== undefined && cell.m !== null && String(cell.m).trim() !== '') return String(cell.m).trim();
-          if (cell.v !== undefined && cell.v !== null) return String(cell.v).trim();
-          return '';
+          let valStr = '';
+          if (cell.m !== undefined && cell.m !== null && String(cell.m).trim() !== '') valStr = String(cell.m);
+          else if (cell.v !== undefined && cell.v !== null) valStr = String(cell.v);
+          return valStr.replace(/\u200B/g, '').trim();
         };
 
         const payload: any = {};
