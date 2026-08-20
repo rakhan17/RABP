@@ -177,7 +177,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
   const currentSheetDataRef = useRef<any[]>([]);
   const workbookRef = useRef<WorkbookInstance>(null);
 
-  useEffect(() => {
+  console.log("SPREADSHEET DATA:", inputType, data.slice(0, 2)); useEffect(() => {
     onSyncStateChange?.(isSyncing);
   }, [isSyncing, onSyncStateChange]);
 

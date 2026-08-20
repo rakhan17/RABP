@@ -50,6 +50,7 @@ export interface MergedRekapData {
   id?: string;
   namaPenerima: string;
   keterangan: string;
+  unitSkpd?: string;
   
   // SPP Fields
   tanggalSpp: string;
