@@ -55,14 +55,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Merge Data for Rekap Data
   const mergedRekapData = useMemo(() => {
-    const map = new Map<string, Partial<MergedRekapData>>();
-    
     const getKey = (ket: string, nama: string) => `${(ket||'').trim().toLowerCase()}_${(nama||'').trim().toLowerCase()}`;
+    
+    // 1. Group SP2D by key, since it can have multiple records per key (taxes)
+    const sp2dMap = new Map<string, Sp2dData[]>();
+    sp2dData.forEach(sp2d => {
+      const key = getKey(sp2d.keterangan, sp2d.namaPenerima);
+      if (!sp2dMap.has(key)) sp2dMap.set(key, []);
+      sp2dMap.get(key)!.push(sp2d);
+    });
+
+    // 2. Build base SPP/SPM map
+    const baseMap = new Map<string, Partial<MergedRekapData>>();
     
     // Add SPP
     sppData.forEach(spp => {
       const key = getKey(spp.keterangan, spp.namaPenerima);
-      map.set(key, {
+      baseMap.set(key, {
         id: spp.id, // primary id
         keterangan: spp.keterangan,
         namaPenerima: spp.namaPenerima,
@@ -82,7 +91,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // Merge SPM
     spmData.forEach(spm => {
       const key = getKey(spm.keterangan, spm.namaPenerima);
-      const existing = map.get(key) || {
+      const existing = baseMap.get(key) || {
         id: spm.id,
         keterangan: spm.keterangan,
         namaPenerima: spm.namaPenerima,
@@ -95,32 +104,66 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       existing.spmUnitSkpd = spm.unitSkpd;
       existing.unitSkpd = existing.unitSkpd || spm.unitSkpd;
       existing.jenisSpm = spm.jenisSpm;
-      map.set(key, existing);
+      baseMap.set(key, existing);
     });
 
-    // Merge SP2D
-    sp2dData.forEach(sp2d => {
-      const key = getKey(sp2d.keterangan, sp2d.namaPenerima);
-      const existing = map.get(key) || {
-        id: sp2d.id,
-        keterangan: sp2d.keterangan,
-        namaPenerima: sp2d.namaPenerima,
-      };
-      existing.tanggalSp2dPembuatan = sp2d.tanggalSp2dPembuatan;
-      existing.tanggalSp2dPencairan = sp2d.tanggalSp2dPencairan;
-      existing.nomorSp2d = sp2d.nomorSp2d;
-      existing.sp2dUnitSkpd = sp2d.unitSkpd;
-      existing.unitSkpd = existing.unitSkpd || sp2d.unitSkpd;
-      existing.jenisSp2d = sp2d.jenisSp2d;
-      existing.pajakJenis = sp2d.pajakJenis;
-      existing.pajakNama = sp2d.pajakNama;
-      existing.pajakJumlah = sp2d.pajakJumlah;
-      existing.kodeBiling = sp2d.kodeBiling;
-      existing.nomorNtpn = sp2d.nomorNtpn;
-      map.set(key, existing);
+    // 3. Combine baseMap and sp2dMap to create final array
+    const finalData: Partial<MergedRekapData>[] = [];
+    const processedSp2dKeys = new Set<string>();
+
+    baseMap.forEach((base, key) => {
+      const sp2ds = sp2dMap.get(key);
+      if (sp2ds && sp2ds.length > 0) {
+        processedSp2dKeys.add(key);
+        // Duplicate base for each SP2D record
+        sp2ds.forEach((sp2d, index) => {
+          finalData.push({
+            ...base,
+            id: index === 0 ? base.id : `${base.id}_sp2d_${index}`,
+            tanggalSp2dPembuatan: sp2d.tanggalSp2dPembuatan,
+            tanggalSp2dPencairan: sp2d.tanggalSp2dPencairan,
+            nomorSp2d: sp2d.nomorSp2d,
+            sp2dUnitSkpd: sp2d.unitSkpd,
+            unitSkpd: base.unitSkpd || sp2d.unitSkpd,
+            jenisSp2d: sp2d.jenisSp2d,
+            pajakJenis: sp2d.pajakJenis,
+            pajakNama: sp2d.pajakNama,
+            pajakJumlah: sp2d.pajakJumlah,
+            kodeBiling: sp2d.kodeBiling,
+            nomorNtpn: sp2d.nomorNtpn,
+          });
+        });
+      } else {
+        // No SP2D data for this base record
+        finalData.push(base);
+      }
     });
 
-    return Array.from(map.values()) as MergedRekapData[];
+    // Add remaining SP2D records that didn't have any SPP/SPM match
+    sp2dMap.forEach((sp2ds, key) => {
+      if (!processedSp2dKeys.has(key)) {
+        sp2ds.forEach(sp2d => {
+          finalData.push({
+            id: sp2d.id,
+            keterangan: sp2d.keterangan,
+            namaPenerima: sp2d.namaPenerima,
+            tanggalSp2dPembuatan: sp2d.tanggalSp2dPembuatan,
+            tanggalSp2dPencairan: sp2d.tanggalSp2dPencairan,
+            nomorSp2d: sp2d.nomorSp2d,
+            sp2dUnitSkpd: sp2d.unitSkpd,
+            unitSkpd: sp2d.unitSkpd,
+            jenisSp2d: sp2d.jenisSp2d,
+            pajakJenis: sp2d.pajakJenis,
+            pajakNama: sp2d.pajakNama,
+            pajakJumlah: sp2d.pajakJumlah,
+            kodeBiling: sp2d.kodeBiling,
+            nomorNtpn: sp2d.nomorNtpn,
+          });
+        });
+      }
+    });
+
+    return finalData as MergedRekapData[];
   }, [sppData, spmData, sp2dData]);
 
   useEffect(() => {
