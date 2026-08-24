@@ -192,7 +192,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
       heights[r] = 36;
       conf.headers[r].forEach((title, cIdx) => {
         if (r === 0) cWidths[cIdx] = conf.columns[cIdx].width;
-        
+
         let mcData: any = undefined;
         let isSlave = false;
         if (conf.merges) {
@@ -238,7 +238,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         const rawStr = val !== undefined && val !== null ? String(val) : '';
         // Inject zero-width space (\u200B) for non-currency strings to completely prevent FortuneSheet from parsing it as a number
         const strVal = (!col.isCurrency && rawStr.length > 0) ? '\u200B' + rawStr : rawStr;
-        
+
         cells.push({
           r: dataRow,
           c: cIdx,
@@ -292,7 +292,7 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
           if (isRekap) return {};
           const dv: Record<string, any> = {};
           const maxRow = Math.max(200, data.length + 50);
-          
+
           conf.columns.forEach((col, cIdx) => {
             if (col.isDropdown) {
               const options = col.dropType === 'bidang' ? BINDANG_LIST.join(',') : SUB_KEGIATAN_LIST.join(',');
@@ -325,10 +325,10 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
 
   const syncToFirestore = useCallback(async () => {
     if (!canEditSpreadsheet || isRekap) return;
-    
+
     const instanceData = workbookRef.current?.getAllSheets()?.[0]?.data;
     const gridData = instanceData || currentSheetDataRef.current;
-    
+
     if (!gridData || gridData.length === 0) return;
 
     setIsSyncing(true);
@@ -353,16 +353,16 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
         conf.columns.forEach((col, cIdx) => {
           const raw = getCellVal(cIdx);
           if (raw) isEmpty = false;
-          
+
           if (col.isCurrency) {
-             payload[col.key] = typeof raw === 'number' ? raw : Number(String(raw).replace(/[^0-9]/g, '')) || 0;
+            payload[col.key] = typeof raw === 'number' ? raw : Number(String(raw).replace(/[^0-9]/g, '')) || 0;
           } else {
-             payload[col.key] = raw;
+            payload[col.key] = raw;
           }
         });
 
         if (isEmpty) continue;
-        
+
         // Auto padding zeroes for "nomor" string fields 
         conf.columns.forEach((col) => {
           if (col.key.toLowerCase().includes('nomor') && /^\d+$/.test(payload[col.key]) && payload[col.key].length < 4) {

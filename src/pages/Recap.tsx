@@ -167,8 +167,8 @@ export default function Recap() {
   const totalNilaiKwitansi = filteredData.reduce((sum, item) => sum + (Number(item.nilaiBruto) || 0), 0);
 
   return (
-    <div className="space-y-6 font-sans print-container p-6 bg-[#f8f9fa] h-full overflow-y-auto custom-scrollbar">
-      <div className="bg-white p-6 rounded-3xl border border-gray-200/60 shadow-sm space-y-6 no-print">
+    <div className="space-y-6 font-sans print-container p-6 bg-[#f8f9fa] h-full overflow-y-auto custom-scrollbar print:h-auto print:overflow-visible print:bg-white print:block">
+      <div className="bg-white p-6 rounded-3xl border border-gray-200/60 shadow-sm space-y-6 no-print print:hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="h-12 w-12 rounded-full bg-[#e9eef6] flex items-center justify-center text-[#0b57d0]">
@@ -335,8 +335,8 @@ export default function Recap() {
         </p>
       </div>
 
-      <div className="bg-white border border-gray-200/60 rounded-3xl overflow-hidden shadow-sm print-fullscreen print:rounded-none print:shadow-none print:border-black">
-        <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center no-print">
+      <div className="bg-white border border-gray-200/60 rounded-3xl overflow-hidden shadow-sm print-fullscreen print:rounded-none print:shadow-none print:border-black print:overflow-visible">
+        <div className="px-6 py-4 border-b border-gray-100 bg-white flex justify-between items-center no-print print:hidden">
           <div className="text-[16px] font-medium text-[#1f1f1f]">
             Data {recapType === 'antar_berkas' ? 'Rekap Antar Berkas' : 'Rekap Pencairan SP2D'}
           </div>
@@ -350,7 +350,7 @@ export default function Recap() {
           </div>
         </div>
 
-        <div className="overflow-x-auto custom-scrollbar print-table-wrapper">
+        <div className="overflow-x-auto custom-scrollbar print-table-wrapper print:overflow-visible">
           {recapType === 'antar_berkas' ? (
             <table className="min-w-full text-left border-collapse print:border print:border-black">
               <thead className="bg-white text-[12px] font-semibold text-[#444746] border-b border-gray-200 print:static print:border-b-black print:text-black">

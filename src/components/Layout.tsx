@@ -14,9 +14,9 @@ export default function Layout() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gray-50 flex m-0 p-0">
+    <div className="h-screen w-screen overflow-hidden bg-gray-50 flex m-0 p-0 print:h-auto print:w-auto print:overflow-visible print:block">
       <Sidebar />
-      <main className="flex-1 w-full h-full overflow-hidden relative bg-white">
+      <main className="flex-1 w-full h-full overflow-hidden relative bg-white print:overflow-visible print:h-auto print:w-auto">
         <Outlet />
       </main>
     </div>
