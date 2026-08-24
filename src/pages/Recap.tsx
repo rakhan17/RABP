@@ -30,8 +30,8 @@ export default function Recap() {
 
   // Filters
   const [bidang, setBidang] = useState(isKeuangan ? '' : userBidang);
-  const [tglMulai, setTglMulai] = useState('');
-  const [tglSelesai, setTglSelesai] = useState('');
+  const [customTglAntar, setCustomTglAntar] = useState('');
+  const [filterTglSpm, setFilterTglSpm] = useState('');
   const [bulan, setBulan] = useState('');
   const [kodeSubKegiatan, setKodeSubKegiatan] = useState('');
   const [filterNoSpm, setFilterNoSpm] = useState('');
@@ -61,7 +61,7 @@ export default function Recap() {
       return dateStr;
     };
 
-    const isFiltered = bidang || filterNoSpm || bulan || kodeSubKegiatan || tglMulai || tglSelesai;
+    const isFiltered = bidang || filterNoSpm || bulan || kodeSubKegiatan || filterTglSpm;
 
     if (isFiltered) {
       result = result.filter((item) => {
@@ -89,11 +89,8 @@ export default function Recap() {
             if (!item.subKegiatan || item.subKegiatan.trim() !== kodeSubKegiatan) return false;
           }
         } else {
-          if (tglMulai) {
-            if (!item.tanggalSpm || parseIndoDate(item.tanggalSpm) < tglMulai) return false;
-          }
-          if (tglSelesai) {
-            if (!item.tanggalSpm || parseIndoDate(item.tanggalSpm) > tglSelesai) return false;
+          if (filterTglSpm) {
+            if (!item.tanggalSpm || parseIndoDate(item.tanggalSpm) !== filterTglSpm) return false;
           }
         }
 
@@ -102,7 +99,7 @@ export default function Recap() {
     }
 
     setFilteredData(result);
-  }, [bidang, tglMulai, tglSelesai, bulan, kodeSubKegiatan, filterNoSpm, mergedRekapData, recapType, selectedRows]);
+  }, [bidang, bulan, kodeSubKegiatan, filterNoSpm, filterTglSpm, mergedRekapData, recapType, selectedRows]);
 
   const toggleRowSelection = (id: string) => {
     const newSet = new Set(selectedRows);
@@ -142,7 +139,7 @@ export default function Recap() {
         const bulanCalc = getBulanName(item.tanggalSpm);
         return {
         'No.': index + 1,
-        'Tanggal Antar Berkas': item.tanggalSpm || '',
+        'Tanggal SPM': item.tanggalSpm || '',
         'Bulan': bulanCalc,
         'No. SPM': item.nomorSpm || '',
         'Nama Rekanan': item.namaPenerima || '',
@@ -307,21 +304,22 @@ export default function Recap() {
             ) : (
               <>
                 <div>
-                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Dari Tanggal SPM</label>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Filter Tanggal SPM (Untuk Tabel)</label>
                   <input
                     type="date"
-                    value={tglMulai}
-                    onChange={(e) => setTglMulai(e.target.value)}
+                    value={filterTglSpm}
+                    onChange={(e) => setFilterTglSpm(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Sampai Tanggal SPM</label>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Tanggal Antar Berkas (Untuk Cetak)</label>
                   <input
-                    type="date"
-                    value={tglSelesai}
-                    onChange={(e) => setTglSelesai(e.target.value)}
+                    type="text"
+                    placeholder="Misal: 25 Agustus 2026"
+                    value={customTglAntar}
+                    onChange={(e) => setCustomTglAntar(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
                   />
                 </div>
@@ -335,31 +333,11 @@ export default function Recap() {
         <h1 className="text-xl font-bold text-black uppercase">
           Laporan {recapType === 'antar_berkas' ? 'Rekapitulasi Antar Berkas' : 'Rekapitulasi Pencairan SP2D'}
         </h1>
-        <p className="text-sm text-gray-800 mt-1">
-          Bidang: <span className="font-bold">{bidang || 'Semua Bidang'}</span>
-          {recapType === 'pencairan_sp2d' ? (
-            <>
-              {' '}| Bulan:{' '}
-              <span className="font-bold">
-                {bulan ? ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][parseInt(bulan, 10) - 1] : 'Semua'}
-              </span>
-              {' '}| Sub Kegiatan:{' '}
-              <span className="font-bold">{kodeSubKegiatan || 'Semua'}</span>
-            </>
-          ) : (
-            <>
-              {' '}| Periode:{' '}
-              <span className="font-bold">
-                {tglMulai ? tglMulai : 'Awal'} s/d {tglSelesai ? tglSelesai : 'Akhir'}
-              </span>
-            </>
-          )}
-          {filterNoSpm && recapType === 'antar_berkas' && (
-             <>
-               {' '}| No SPM: <span className="font-bold">{filterNoSpm}</span>
-             </>
-          )}
-        </p>
+        {recapType === 'antar_berkas' && customTglAntar && (
+          <p className="text-sm text-gray-800 mt-1 font-medium">
+            Tanggal Antar: {customTglAntar}
+          </p>
+        )}
       </div>
 
       <div className="bg-white border border-gray-200/60 rounded-3xl overflow-hidden shadow-sm print-fullscreen print:rounded-none print:shadow-none print:border-black print:overflow-visible">
@@ -386,7 +364,7 @@ export default function Recap() {
                     <input type="checkbox" onChange={toggleAllSelection} checked={filteredData.length > 0 && selectedRows.size === filteredData.length} />
                   </th>
                   <th className="px-5 py-4 font-medium text-center w-12">No</th>
-                  <th className="px-5 py-4 font-medium whitespace-nowrap">Tgl Antar / SPM</th>
+                  <th className="px-5 py-4 font-medium whitespace-nowrap">Tgl SPM</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Bulan</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">No SPM</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Nama Rekanan</th>
