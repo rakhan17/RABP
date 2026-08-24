@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { subscribeToCollection, getFromFirestore } from '../lib/firestoreService';
+import { SUB_KEGIATAN_MAPPING } from '../lib/users';
 import type { SppData, SpmData, Sp2dData, MergedRekapData } from '../types';
 
 interface DataContextType {
@@ -31,26 +32,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const isKeuangan = user?.username?.toLowerCase() === 'keuangan' || user?.bidang?.toLowerCase() === 'keuangan';
+  const isKeuangan = user?.role === 'admin' || user?.username?.toLowerCase() === 'keuangan' || user?.bidang?.toLowerCase() === 'keuangan';
   const userBidang = user?.bidang || '';
+
+  const getBidangFromItem = (item: any) => {
+    if (item.bidang) return item.bidang.toLowerCase().trim();
+    if (item.unitSkpd) return item.unitSkpd.toLowerCase().trim();
+    if (item.subKegiatan) {
+      const mapped = SUB_KEGIATAN_MAPPING[item.subKegiatan.trim()];
+      if (mapped) return mapped.toLowerCase().trim();
+    }
+    return '';
+  };
 
   // Filter dataset synchronously based on Bidang scoping
   const sppData = useMemo(() => {
     if (isKeuangan || !userBidang) return allSppData;
     const ub = userBidang.toLowerCase().trim();
-    return allSppData.filter((item) => item.unitSkpd?.toLowerCase().trim() === ub || item.bidang?.toLowerCase().trim() === ub);
+    return allSppData.filter((item) => getBidangFromItem(item) === ub);
   }, [allSppData, isKeuangan, userBidang]);
 
   const spmData = useMemo(() => {
     if (isKeuangan || !userBidang) return allSpmData;
     const ub = userBidang.toLowerCase().trim();
-    return allSpmData.filter((item) => item.unitSkpd?.toLowerCase().trim() === ub);
+    return allSpmData.filter((item) => getBidangFromItem(item) === ub);
   }, [allSpmData, isKeuangan, userBidang]);
 
   const sp2dData = useMemo(() => {
     if (isKeuangan || !userBidang) return allSp2dData;
     const ub = userBidang.toLowerCase().trim();
-    return allSp2dData.filter((item) => item.unitSkpd?.toLowerCase().trim() === ub);
+    return allSp2dData.filter((item) => getBidangFromItem(item) === ub);
   }, [allSp2dData, isKeuangan, userBidang]);
 
   // Merge Data for Rekap Data

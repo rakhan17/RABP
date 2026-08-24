@@ -12,7 +12,6 @@ export interface SpreadsheetGridRef {
 interface SpreadsheetGridProps {
   data: any[];
   inputType: 'spp' | 'spm' | 'sp2d' | 'rekap';
-  isAdmin: boolean;
   userBidang: string;
   isKeuangan: boolean;
   onSyncStateChange?: (syncing: boolean) => void;
@@ -165,7 +164,6 @@ const CONFIG: Record<string, { collection: string, merges?: Record<string, any>,
 const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
   data,
   inputType,
-  isAdmin,
   userBidang,
   isKeuangan,
   onSyncStateChange,
@@ -173,11 +171,11 @@ const SpreadsheetGrid = forwardRef<SpreadsheetGridRef, SpreadsheetGridProps>(({
 }, ref) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const isRekap = inputType === 'rekap';
-  const canEditSpreadsheet = (isAdmin || isKeuangan) && !isRekap;
+  const canEditSpreadsheet = isKeuangan && !isRekap;
   const currentSheetDataRef = useRef<any[]>([]);
   const workbookRef = useRef<WorkbookInstance>(null);
 
-  console.log("SPREADSHEET DATA:", inputType, data.slice(0, 2)); useEffect(() => {
+  useEffect(() => {
     onSyncStateChange?.(isSyncing);
   }, [isSyncing, onSyncStateChange]);
 

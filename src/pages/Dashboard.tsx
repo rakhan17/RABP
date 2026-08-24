@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import SpreadsheetGrid, { type SpreadsheetGridRef } from '../components/SpreadsheetGrid';
 import { ShieldCheck, Lock, RefreshCw, Save, CheckCircle2 } from 'lucide-react';
@@ -23,8 +22,7 @@ export default function Dashboard() {
 
   const gridRef = useRef<SpreadsheetGridRef>(null);
 
-  const isAdmin = useAuth().user?.role === 'admin' || isKeuangan;
-  const canEditSpreadsheet = isAdmin || isKeuangan;
+  const canEditSpreadsheet = isKeuangan;
 
   const handleSyncStateChange = useCallback((syncing: boolean) => {
     setIsSyncing(syncing);
@@ -142,7 +140,6 @@ export default function Dashboard() {
             ref={gridRef}
             data={currentData}
             inputType={inputType as 'spp' | 'spm' | 'sp2d' | 'rekap'}
-            isAdmin={isAdmin}
             userBidang={userBidang}
             isKeuangan={isKeuangan}
             onSyncStateChange={handleSyncStateChange}
