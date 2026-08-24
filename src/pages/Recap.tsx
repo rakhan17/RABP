@@ -8,6 +8,10 @@ import * as XLSX from 'xlsx';
 
 const getBulanName = (dateStr: string | undefined | null) => {
   if (!dateStr) return '-';
+  const parts = dateStr.trim().split(' ');
+  if (parts.length === 3) {
+    return parts[1]; // Mengembalikan bulan (misal "Agustus")
+  }
   const d = new Date(dateStr);
   if (!isNaN(d.getTime())) {
     return d.toLocaleDateString('id-ID', { month: 'long' });
@@ -44,38 +48,61 @@ export default function Recap() {
   useEffect(() => {
     let result = mergedRekapData;
 
-    if (bidang) {
-      const bNorm = bidang.toLowerCase().trim();
-      result = result.filter((item) => item.bidang && item.bidang.toLowerCase().trim() === bNorm);
-    }
+    const parseIndoDate = (dateStr: string) => {
+      if (!dateStr) return '';
+      const months: Record<string, string> = {
+        'januari': '01', 'februari': '02', 'maret': '03', 'april': '04', 'mei': '05', 'juni': '06',
+        'juli': '07', 'agustus': '08', 'september': '09', 'oktober': '10', 'november': '11', 'desember': '12'
+      };
+      const parts = dateStr.trim().toLowerCase().split(' ');
+      if (parts.length === 3) {
+        return `${parts[2]}-${months[parts[1]] || '01'}-${parts[0].padStart(2, '0')}`;
+      }
+      return dateStr;
+    };
 
-    if (filterNoSpm) {
-      result = result.filter((item) => item.nomorSpm && item.nomorSpm === filterNoSpm);
-    }
+    const isFiltered = bidang || filterNoSpm || bulan || kodeSubKegiatan || tglMulai || tglSelesai;
 
-    if (recapType === 'pencairan_sp2d') {
-      if (bulan) {
-        result = result.filter((item) => {
-           if (!item.tanggalSp2dPembuatan && !item.tanggalSpm) return false;
-           const dateStr = item.tanggalSp2dPembuatan || item.tanggalSpm;
-           const d = new Date(dateStr);
-           return !isNaN(d.getTime()) && String(d.getMonth() + 1).padStart(2, '0') === bulan;
-        });
-      }
-      if (kodeSubKegiatan) {
-        result = result.filter((item) => item.subKegiatan && item.subKegiatan.trim() === kodeSubKegiatan);
-      }
-    } else {
-      if (tglMulai) {
-        result = result.filter((item) => item.tanggalSpm >= tglMulai);
-      }
-      if (tglSelesai) {
-        result = result.filter((item) => item.tanggalSpm && item.tanggalSpm <= tglSelesai);
-      }
+    if (isFiltered) {
+      result = result.filter((item) => {
+        // Pertahankan data yang sudah dicentang (selected) meskipun filter berubah
+        const rowId = item.id || item.nomorSpm || '';
+        if (selectedRows.has(rowId)) return true;
+
+        if (bidang) {
+          const bNorm = bidang.toLowerCase().trim();
+          if (!item.bidang || item.bidang.toLowerCase().trim() !== bNorm) return false;
+        }
+
+        if (filterNoSpm) {
+          if (!item.nomorSpm || item.nomorSpm !== filterNoSpm) return false;
+        }
+
+        if (recapType === 'pencairan_sp2d') {
+          if (bulan) {
+            const dateStr = item.tanggalSp2dPembuatan || item.tanggalSpm;
+            if (!dateStr) return false;
+            const yyyymmdd = parseIndoDate(dateStr);
+            if (!yyyymmdd.split('-')[1] || yyyymmdd.split('-')[1] !== bulan) return false;
+          }
+          if (kodeSubKegiatan) {
+            if (!item.subKegiatan || item.subKegiatan.trim() !== kodeSubKegiatan) return false;
+          }
+        } else {
+          if (tglMulai) {
+            if (!item.tanggalSpm || parseIndoDate(item.tanggalSpm) < tglMulai) return false;
+          }
+          if (tglSelesai) {
+            if (!item.tanggalSpm || parseIndoDate(item.tanggalSpm) > tglSelesai) return false;
+          }
+        }
+
+        return true;
+      });
     }
 
     setFilteredData(result);
-  }, [bidang, tglMulai, tglSelesai, bulan, kodeSubKegiatan, filterNoSpm, mergedRekapData, recapType]);
+  }, [bidang, tglMulai, tglSelesai, bulan, kodeSubKegiatan, filterNoSpm, mergedRekapData, recapType, selectedRows]);
 
   const toggleRowSelection = (id: string) => {
     const newSet = new Set(selectedRows);

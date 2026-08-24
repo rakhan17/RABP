@@ -13,7 +13,7 @@
     "@fortune-sheet/react": "^1.0.4",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
-    "firebase": "^12.16.0",
+    "firebase": "^12.18.0",
     "lucide-react": "^1.27.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
