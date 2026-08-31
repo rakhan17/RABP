@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, FileText, LogOut, ChevronRight, UserCircle, Edit3 } from 'lucide-react';
+import { Search, FileText, LogOut, ChevronRight, UserCircle, Edit3, BookmarkCheck } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Sidebar() {
@@ -100,6 +100,11 @@ export default function Sidebar() {
             </NavLink>
           </div>
         </div>
+
+        <NavLink to="/recap/saved" className={navItemClass}>
+          <BookmarkCheck className="w-[22px] h-[22px] mr-4 shrink-0" strokeWidth={2} />
+          <span>Riwayat Antar Berkas</span>
+        </NavLink>
       </nav>
 
       <div className="p-4 shrink-0 mt-auto">

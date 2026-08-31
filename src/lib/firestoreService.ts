@@ -106,3 +106,33 @@ export async function deleteFromFirestore(collectionName: string, id: string) {
     throw error;
   }
 }
+
+export interface SavedAntarBerkasRecord {
+  id?: string;
+  tanggalAntar: string;
+  tanggalAntarFull?: string;
+  tanggalSimpan: string;
+  bidang: string;
+  jumlahData: number;
+  totalNilai: number;
+  items: any[];
+  savedBy?: string;
+  createdAt?: any;
+}
+
+export async function saveAntarBerkas(record: Omit<SavedAntarBerkasRecord, 'id'>) {
+  return addToFirestore('saved_rekap_antar_berkas', record);
+}
+
+export async function getSavedAntarBerkas(): Promise<SavedAntarBerkasRecord[]> {
+  return getFromFirestore<SavedAntarBerkasRecord>('saved_rekap_antar_berkas');
+}
+
+export async function updateSavedAntarBerkas(id: string, record: Partial<SavedAntarBerkasRecord>) {
+  return updateInFirestore('saved_rekap_antar_berkas', id, record);
+}
+
+export async function deleteSavedAntarBerkas(id: string) {
+  return deleteFromFirestore('saved_rekap_antar_berkas', id);
+}
+

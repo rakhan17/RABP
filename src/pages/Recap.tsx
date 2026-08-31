@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 import type { MergedRekapData } from '../types';
-import { FileDown, Download, Filter, Table2 } from 'lucide-react';
+import { FileDown, Download, Filter, Table2, Bookmark, CheckCircle2 } from 'lucide-react';
 import { BINDANG_LIST, SUB_KEGIATAN_LIST } from '../lib/users';
+import { formatIndoFullDate, parseFlexDate } from '../lib/dateUtils';
+import { saveAntarBerkas } from '../lib/firestoreService';
 import * as XLSX from 'xlsx';
 
 const getBulanName = (dateStr: string | undefined | null) => {
   if (!dateStr) return '-';
   const parts = dateStr.trim().split(' ');
   if (parts.length === 3) {
-    return parts[1]; // Mengembalikan bulan (misal "Agustus")
+    return parts[1];
   }
   const d = new Date(dateStr);
   if (!isNaN(d.getTime())) {
@@ -19,14 +22,19 @@ const getBulanName = (dateStr: string | undefined | null) => {
   return dateStr;
 };
 
+type MergedItemWithUid = MergedRekapData & { _uid: string };
+
 export default function Recap() {
   const { type } = useParams<{ type: string }>();
   const isAntarBerkas = type === 'antar-berkas';
   const recapType = isAntarBerkas ? 'antar_berkas' : 'pencairan_sp2d';
 
+  const { user } = useAuth();
   const { mergedRekapData, loading, isKeuangan, userBidang } = useData();
-  const [filteredData, setFilteredData] = useState<MergedRekapData[]>([]);
+  const [filteredData, setFilteredData] = useState<MergedItemWithUid[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Filters
   const [bidang, setBidang] = useState(isKeuangan ? '' : userBidang);
@@ -36,8 +44,18 @@ export default function Recap() {
   const [kodeSubKegiatan, setKodeSubKegiatan] = useState('');
   const [filterNoSpm, setFilterNoSpm] = useState('');
 
+  // Assign unique keys to merged items
+  const dataWithKeys: MergedItemWithUid[] = useMemo(() => {
+    return mergedRekapData.map((item, idx) => ({
+      ...item,
+      _uid: item.id || `${item.nomorSpm || 'no_spm'}_${item.nomorSpp || 'no_spp'}_${idx}`
+    }));
+  }, [mergedRekapData]);
+
   // Get distinct Nomor SPM for the dropdown
-  const uniqueNoSpm = Array.from(new Set(mergedRekapData.map(item => item.nomorSpm).filter(Boolean))).sort();
+  const uniqueNoSpm = useMemo(() => {
+    return Array.from(new Set(dataWithKeys.map(item => item.nomorSpm).filter(Boolean))).sort();
+  }, [dataWithKeys]);
 
   useEffect(() => {
     if (!isKeuangan && userBidang) {
@@ -46,28 +64,14 @@ export default function Recap() {
   }, [isKeuangan, userBidang]);
 
   useEffect(() => {
-    let result = mergedRekapData;
-
-    const parseIndoDate = (dateStr: string) => {
-      if (!dateStr) return '';
-      const months: Record<string, string> = {
-        'januari': '01', 'februari': '02', 'maret': '03', 'april': '04', 'mei': '05', 'juni': '06',
-        'juli': '07', 'agustus': '08', 'september': '09', 'oktober': '10', 'november': '11', 'desember': '12'
-      };
-      const parts = dateStr.trim().toLowerCase().split(' ');
-      if (parts.length === 3) {
-        return `${parts[2]}-${months[parts[1]] || '01'}-${parts[0].padStart(2, '0')}`;
-      }
-      return dateStr;
-    };
+    let result = dataWithKeys;
 
     const isFiltered = bidang || filterNoSpm || bulan || kodeSubKegiatan || filterTglSpm;
 
     if (isFiltered) {
       result = result.filter((item) => {
-        // Pertahankan data yang sudah dicentang (selected) meskipun filter berubah
-        const rowId = item.id || item.nomorSpm || '';
-        if (selectedRows.has(rowId)) return true;
+        // Pertahankan data yang sudah dicentang
+        if (selectedRows.has(item._uid)) return true;
 
         if (bidang) {
           const bNorm = bidang.toLowerCase().trim();
@@ -82,15 +86,17 @@ export default function Recap() {
           if (bulan) {
             const dateStr = item.tanggalSp2dPembuatan || item.tanggalSpm;
             if (!dateStr) return false;
-            const yyyymmdd = parseIndoDate(dateStr);
-            if (!yyyymmdd.split('-')[1] || yyyymmdd.split('-')[1] !== bulan) return false;
+            const parsedYMD = parseFlexDate(dateStr);
+            if (!parsedYMD.split('-')[1] || parsedYMD.split('-')[1] !== bulan) return false;
           }
           if (kodeSubKegiatan) {
             if (!item.subKegiatan || item.subKegiatan.trim() !== kodeSubKegiatan) return false;
           }
         } else {
           if (filterTglSpm) {
-            if (!item.tanggalSpm || parseIndoDate(item.tanggalSpm) !== filterTglSpm) return false;
+            const parsedFilterDate = parseFlexDate(filterTglSpm);
+            const parsedItemDate = parseFlexDate(item.tanggalSpm);
+            if (!item.tanggalSpm || (parsedFilterDate && parsedItemDate !== parsedFilterDate)) return false;
           }
         }
 
@@ -99,14 +105,14 @@ export default function Recap() {
     }
 
     setFilteredData(result);
-  }, [bidang, bulan, kodeSubKegiatan, filterNoSpm, filterTglSpm, mergedRekapData, recapType, selectedRows]);
+  }, [bidang, bulan, kodeSubKegiatan, filterNoSpm, filterTglSpm, dataWithKeys, recapType, selectedRows]);
 
-  const toggleRowSelection = (id: string) => {
+  const toggleRowSelection = (uid: string) => {
     const newSet = new Set(selectedRows);
-    if (newSet.has(id)) {
-      newSet.delete(id);
+    if (newSet.has(uid)) {
+      newSet.delete(uid);
     } else {
-      newSet.add(id);
+      newSet.add(uid);
     }
     setSelectedRows(newSet);
   };
@@ -115,7 +121,7 @@ export default function Recap() {
     if (selectedRows.size === filteredData.length) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(filteredData.map(d => d.id || d.nomorSpm || Math.random().toString())));
+      setSelectedRows(new Set(filteredData.map(d => d._uid)));
     }
   };
 
@@ -123,8 +129,55 @@ export default function Recap() {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
   };
 
+  const activeExportItems = useMemo(() => {
+    if (selectedRows.size > 0) {
+      return filteredData.filter(d => selectedRows.has(d._uid));
+    }
+    return filteredData;
+  }, [filteredData, selectedRows]);
+
+  const totalNilaiKwitansi = activeExportItems.reduce((sum, item) => sum + (Number(item.nilaiBruto) || 0), 0);
+
+  const handleSaveData = async () => {
+    if (activeExportItems.length === 0) {
+      alert('Tidak ada data untuk disimpan');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const formattedTgl = formatIndoFullDate(customTglAntar || new Date().toISOString().split('T')[0]);
+      
+      await saveAntarBerkas({
+        tanggalAntar: customTglAntar || formattedTgl,
+        tanggalAntarFull: formattedTgl,
+        tanggalSimpan: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        bidang: bidang || userBidang || 'Semua Bidang',
+        jumlahData: activeExportItems.length,
+        totalNilai: totalNilaiKwitansi,
+        items: activeExportItems.map(item => ({
+          tanggalSpm: item.tanggalSpm || '',
+          nomorSpm: item.nomorSpm || '',
+          namaPenerima: item.namaPenerima || '',
+          nilaiBruto: item.nilaiBruto || 0,
+          keterangan: item.keterangan || '',
+          bidang: item.bidang || '',
+          subKegiatan: item.subKegiatan || '',
+        })),
+        savedBy: user?.username || 'user'
+      });
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      alert('Gagal menyimpan data rekapitulasi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleExportExcel = () => {
-    if (filteredData.length === 0) {
+    if (activeExportItems.length === 0) {
       alert('Tidak ada data untuk diexport');
       return;
     }
@@ -135,34 +188,34 @@ export default function Recap() {
 
     if (recapType === 'antar_berkas') {
       sheetName = 'Rekap Antar Berkas';
-      exportData = filteredData.map((item, index) => {
+      exportData = activeExportItems.map((item, index) => {
         const bulanCalc = getBulanName(item.tanggalSpm);
         return {
-        'No.': index + 1,
-        'Tanggal SPM': item.tanggalSpm || '',
-        'Bulan': bulanCalc,
-        'No. SPM': item.nomorSpm || '',
-        'Nama Rekanan': item.namaPenerima || '',
-        'Nilai Kwitansi (Rp)': item.nilaiBruto || 0,
-        'Keterangan': item.keterangan || '',
+          'No.': index + 1,
+          'Tanggal SPM': item.tanggalSpm || '',
+          'Bulan': bulanCalc,
+          'No. SPM': item.nomorSpm || '',
+          'Nama Rekanan': item.namaPenerima || '',
+          'Nilai Kwitansi (Rp)': item.nilaiBruto || 0,
+          'Keterangan': item.keterangan || '',
         };
       });
       wscols = [{ wch: 6 }, { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 22 }, { wch: 45 }];
     } else {
       sheetName = 'Rekap Pencairan SP2D';
-      exportData = filteredData.map((item, index) => {
+      exportData = activeExportItems.map((item, index) => {
         const bulanCalc = getBulanName(item.tanggalSp2dPembuatan || item.tanggalSpm);
         return {
-        'No.': index + 1,
-        'Bulan': bulanCalc,
-        'No. SPM': item.nomorSpm || '',
-        'Nama Rekanan': item.namaPenerima || '',
-        'Nilai Kwitansi (Rp)': item.nilaiBruto || 0,
-        'Nama Bidang': item.bidang || '',
-        'Kode Sub Kegiatan': item.subKegiatan || '',
-        'Keterangan': item.keterangan || '',
-        'No. SP2D': item.nomorSp2d || '',
-        'Tanggal Cair SP2D': item.tanggalSp2dPencairan || '',
+          'No.': index + 1,
+          'Bulan': bulanCalc,
+          'No. SPM': item.nomorSpm || '',
+          'Nama Rekanan': item.namaPenerima || '',
+          'Nilai Kwitansi (Rp)': item.nilaiBruto || 0,
+          'Nama Bidang': item.bidang || '',
+          'Kode Sub Kegiatan': item.subKegiatan || '',
+          'Keterangan': item.keterangan || '',
+          'No. SP2D': item.nomorSp2d || '',
+          'Tanggal Cair SP2D': item.tanggalSp2dPencairan || '',
         };
       });
       wscols = [
@@ -188,8 +241,6 @@ export default function Recap() {
     window.print();
   };
 
-  const totalNilaiKwitansi = filteredData.reduce((sum, item) => sum + (Number(item.nilaiBruto) || 0), 0);
-
   return (
     <div className="space-y-6 font-sans print-container p-6 bg-[#f8f9fa] h-full overflow-y-auto custom-scrollbar print:h-auto print:overflow-visible print:bg-white print:block">
       <div className="bg-white p-6 rounded-3xl border border-gray-200/60 shadow-sm space-y-6 no-print print:hidden">
@@ -202,11 +253,31 @@ export default function Recap() {
               <h3 className="text-[22px] font-normal text-[#1f1f1f] leading-tight">
                 {isAntarBerkas ? 'Rekap Antar Berkas' : 'Rekap Pencairan SP2D'}
               </h3>
-              <p className="text-[14px] text-[#444746] mt-0.5">Filter, Ekspor, atau Cetak Laporan</p>
+              <p className="text-[14px] text-[#444746] mt-0.5">Filter, Ekspor, Simpan, atau Cetak Laporan</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {isAntarBerkas && (
+              <button
+                onClick={handleSaveData}
+                disabled={saving || loading || filteredData.length === 0}
+                className="flex items-center space-x-2 bg-[#0b57d0] hover:bg-[#0842a0] text-white disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple shadow-sm"
+              >
+                {saveSuccess ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Tersimpan!</span>
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="h-4 w-4" strokeWidth={2.5} />
+                    <span>{saving ? 'Menyimpan...' : 'Simpan Data'}</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               onClick={downloadPDF}
               disabled={loading || filteredData.length === 0}
@@ -215,9 +286,11 @@ export default function Recap() {
               <Download className="h-4 w-4" strokeWidth={2.5} />
               <span>Cetak PDF</span>
             </button>
+
             <button
               onClick={handleExportExcel}
-              className="flex items-center space-x-2 bg-[#0b57d0] hover:bg-[#0842a0] text-white disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple shadow-sm"
+              disabled={loading || filteredData.length === 0}
+              className="flex items-center space-x-2 bg-[#e9eef6] text-[#0b57d0] hover:bg-[#d3e3fd] disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-medium transition-all ripple shadow-sm"
             >
               <FileDown className="h-4 w-4" strokeWidth={2.5} />
               <span>Ekspor Excel</span>
@@ -304,7 +377,7 @@ export default function Recap() {
             ) : (
               <>
                 <div>
-                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Filter Tanggal SPM (Untuk Tabel)</label>
+                  <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Filter Tanggal SPM</label>
                   <input
                     type="date"
                     value={filterTglSpm}
@@ -316,8 +389,7 @@ export default function Recap() {
                 <div>
                   <label className="block text-[13px] font-medium text-[#444746] mb-1.5">Tanggal Antar Berkas (Untuk Cetak)</label>
                   <input
-                    type="text"
-                    placeholder="Misal: 25 Agustus 2026"
+                    type="date"
                     value={customTglAntar}
                     onChange={(e) => setCustomTglAntar(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-[#1f1f1f] text-[14px] focus:ring-2 focus:ring-[#0b57d0] focus:border-[#0b57d0] outline-none transition-all"
@@ -335,7 +407,7 @@ export default function Recap() {
         </h1>
         {recapType === 'antar_berkas' && customTglAntar && (
           <p className="text-sm text-gray-800 mt-1 font-medium">
-            Tanggal Antar: {customTglAntar}
+            Tanggal Antar: {formatIndoFullDate(customTglAntar)}
           </p>
         )}
       </div>
@@ -347,10 +419,10 @@ export default function Recap() {
           </div>
           <div className="flex items-center space-x-4 text-[14px]">
             <span className="text-[#444746]">
-              Total: <span className="text-[#444746] font-bold ml-1">{formatCurrency(totalNilaiKwitansi)}</span>
+              Total ({activeExportItems.length} dipilih): <span className="text-[#444746] font-bold ml-1">{formatCurrency(totalNilaiKwitansi)}</span>
             </span>
             <span className="bg-[#e9eef6] text-[#0b57d0] text-[13px] font-medium px-3 py-1 rounded-full">
-              {filteredData.length} Data
+              {filteredData.length} Total Data
             </span>
           </div>
         </div>
@@ -375,32 +447,30 @@ export default function Recap() {
               <tbody className="divide-y divide-gray-100/80 bg-white print:divide-black/50">
                 {filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-16 text-center text-sm text-[#444746]">
+                    <td colSpan={8} className="px-5 py-16 text-center text-sm text-[#444746]">
                       Tidak ada data rekapitulasi yang sesuai kriteria.
                     </td>
                   </tr>
                 ) : (
                   filteredData.map((row, idx) => {
                     const bulanCalc = getBulanName(row.tanggalSpm);
-                    const rowId = row.id || row.nomorSpm || idx.toString();
-                    const isSelected = selectedRows.has(rowId);
+                    const isSelected = selectedRows.has(row._uid);
                     
-                    // In print mode, if any row is selected, hide unselected rows.
                     const printHiddenClass = selectedRows.size > 0 && !isSelected ? 'print:hidden' : '';
 
                     return (
-                    <tr key={rowId} className={`hover:bg-[#f8f9fa] transition-colors print:break-inside-avoid ${printHiddenClass}`}>
-                      <td className="px-5 py-3.5 text-center text-[#444746] text-[13px] print:hidden">
-                        <input type="checkbox" checked={isSelected} onChange={() => toggleRowSelection(rowId)} />
-                      </td>
-                      <td className="px-5 py-3.5 text-center text-[#444746] text-[13px]">{idx + 1}</td>
-                      <td className="px-5 py-3.5 whitespace-nowrap text-[13px] text-[#444746]">{row.tanggalSpm || '-'}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746]">{bulanCalc}</td>
-                      <td className="px-5 py-3.5 font-medium text-[13px] text-[#0b57d0] whitespace-nowrap">{row.nomorSpm || '-'}</td>
-                      <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] truncate max-w-[200px] print:max-w-none">{row.namaPenerima || '-'}</td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-[13px] text-[#444746] whitespace-nowrap print:text-black">{formatCurrency(row.nilaiBruto)}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746] truncate max-w-[300px] print:max-w-none print:whitespace-normal">{row.keterangan || '-'}</td>
-                    </tr>
+                      <tr key={row._uid} className={`hover:bg-[#f8f9fa] transition-colors print:break-inside-avoid ${printHiddenClass}`}>
+                        <td className="px-5 py-3.5 text-center text-[#444746] text-[13px] print:hidden">
+                          <input type="checkbox" checked={isSelected} onChange={() => toggleRowSelection(row._uid)} />
+                        </td>
+                        <td className="px-5 py-3.5 text-center text-[#444746] text-[13px]">{idx + 1}</td>
+                        <td className="px-5 py-3.5 whitespace-nowrap text-[13px] text-[#444746]">{row.tanggalSpm || '-'}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746]">{bulanCalc}</td>
+                        <td className="px-5 py-3.5 font-medium text-[13px] text-[#0b57d0] whitespace-nowrap">{row.nomorSpm || '-'}</td>
+                        <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] truncate max-w-[200px] print:max-w-none">{row.namaPenerima || '-'}</td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-[13px] text-[#444746] whitespace-nowrap print:text-black">{formatCurrency(row.nilaiBruto)}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746] truncate max-w-[300px] print:max-w-none print:whitespace-normal">{row.keterangan || '-'}</td>
+                      </tr>
                     );
                   })
                 )}
@@ -426,7 +496,6 @@ export default function Recap() {
                 <tr>
                   <th className="px-5 py-4 font-medium text-center w-12">No</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Bulan</th>
-
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Nama Rekanan</th>
                   <th className="px-5 py-4 font-medium text-right whitespace-nowrap">Nilai Kwitansi</th>
                   <th className="px-5 py-4 font-medium whitespace-nowrap">Nama Bidang</th>
@@ -447,17 +516,17 @@ export default function Recap() {
                   filteredData.map((row, idx) => {
                     const bulanCalc = getBulanName(row.tanggalSp2dPembuatan || row.tanggalSpm);
                     return (
-                    <tr key={row.id || idx} className="hover:bg-[#f8f9fa] transition-colors print:break-inside-avoid">
-                      <td className="px-5 py-3.5 text-center text-[#444746] text-[13px]">{idx + 1}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746]">{bulanCalc}</td>
-                      <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] truncate max-w-[180px] print:max-w-none">{row.namaPenerima || '-'}</td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-[13px] text-[#444746] whitespace-nowrap print:text-black">{formatCurrency(row.nilaiBruto)}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746] truncate max-w-[140px] print:max-w-none">{row.bidang || '-'}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{row.subKegiatan || '-'}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746] truncate max-w-[240px] print:max-w-none print:whitespace-normal">{row.keterangan || '-'}</td>
-                      <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] whitespace-nowrap print:text-black">{row.nomorSp2d || '-'}</td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{row.tanggalSp2dPencairan || '-'}</td>
-                    </tr>
+                      <tr key={row._uid} className="hover:bg-[#f8f9fa] transition-colors print:break-inside-avoid">
+                        <td className="px-5 py-3.5 text-center text-[#444746] text-[13px]">{idx + 1}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746]">{bulanCalc}</td>
+                        <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] truncate max-w-[180px] print:max-w-none">{row.namaPenerima || '-'}</td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-[13px] text-[#444746] whitespace-nowrap print:text-black">{formatCurrency(row.nilaiBruto)}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746] truncate max-w-[140px] print:max-w-none">{row.bidang || '-'}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{row.subKegiatan || '-'}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746] truncate max-w-[240px] print:max-w-none print:whitespace-normal">{row.keterangan || '-'}</td>
+                        <td className="px-5 py-3.5 text-[13px] font-medium text-[#1f1f1f] whitespace-nowrap print:text-black">{row.nomorSp2d || '-'}</td>
+                        <td className="px-5 py-3.5 text-[13px] text-[#444746] whitespace-nowrap">{row.tanggalSp2dPencairan || '-'}</td>
+                      </tr>
                     );
                   })
                 )}
@@ -482,3 +551,4 @@ export default function Recap() {
     </div>
   );
 }
+
